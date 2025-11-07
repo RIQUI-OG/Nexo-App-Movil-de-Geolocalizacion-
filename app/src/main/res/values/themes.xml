@@ -1,0 +1,17 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 🌞 Tema claro sin ActionBar -->
+    <style name="Theme.Nexo.NoActionBar" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">#156082</item>
+        <item name="colorPrimaryVariant">#0E3E58</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+
+        <item name="colorSecondary">#00BFA6</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+
+        <item name="android:statusBarColor">#156082</item>
+        <item name="android:navigationBarColor">#156082</item>
+        <item name="android:windowBackground">#FFFFFF</item>
+    </style>
+
+</resources>
