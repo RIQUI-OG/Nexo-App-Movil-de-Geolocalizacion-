@@ -25,7 +25,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="Conecta tu mundo"
-        android:textColor="#FFFFFF"
+        android:textColor="#156082"
         android:textSize="18sp"
         android:alpha="0.8"
         app:layout_constraintEnd_toEndOf="parent"
