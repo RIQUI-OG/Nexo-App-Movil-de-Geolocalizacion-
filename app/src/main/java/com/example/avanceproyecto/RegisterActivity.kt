@@ -1,10 +1,13 @@
 package com.example.avanceproyecto
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Button
 import android.widget.EditText
+
+
 
 class RegisterActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -16,14 +19,27 @@ class RegisterActivity : AppCompatActivity() {
         val etPassword = findViewById<EditText>(R.id.etPasswordRegister)
         val etPhone = findViewById<EditText>(R.id.etPhone)
         val btnRegisterConfirm = findViewById<Button>(R.id.btnRegisterConfirm)
+        val btnGoToLogin = findViewById<Button>(R.id.btnGoToLogin)
+
 
         btnRegisterConfirm.setOnClickListener {
             if (etName.text.isNotEmpty() && etEmail.text.isNotEmpty() &&
                 etPassword.text.isNotEmpty() && etPhone.text.isNotEmpty()) {
+
+                val name = etName.text.toString()
                 Toast.makeText(this, "Registro exitoso", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, HomeActivity::class.java)
+                intent.putExtra("USER_NAME", name)  // "USER_NAME" es la clave
+                startActivity(intent)
+
             } else {
                 Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
             }
         }
+
+        btnGoToLogin.setOnClickListener {
+            startActivity(Intent(this, LoginActivity::class.java))
+        }
+
     }
 }
