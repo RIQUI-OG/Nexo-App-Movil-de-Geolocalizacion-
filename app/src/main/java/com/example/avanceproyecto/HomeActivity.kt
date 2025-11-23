@@ -42,6 +42,11 @@ class HomeActivity : AppCompatActivity() {
             sendFamilyAlert(userName)
         }
 
+        val btnScheduleTrip = findViewById<Button>(R.id.btnScheduleTrip)
+        btnScheduleTrip.setOnClickListener {
+            startActivity(Intent(this, TripScheduleActivity::class.java))
+        }
+
         createNotificationChannel()
     }
 
