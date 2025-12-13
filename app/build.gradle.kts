@@ -61,6 +61,9 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
+    implementation(libs.play.services.maps)
+    implementation(libs.play.services.location)
+
     // NOTA: Eliminé TODAS las dependencias de Compose:
     // implementation(libs.androidx.lifecycle.runtime.ktx)
     // implementation(libs.androidx.activity.compose)

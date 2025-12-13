@@ -109,6 +109,18 @@
                 android:textStyle="bold"
                 android:elevation="8dp" />
 
+            <Button
+                android:id="@+id/btnOpenMap"
+                android:layout_width="250dp"
+                android:layout_height="55dp"
+                android:layout_marginTop="20dp"
+                android:background="@drawable/button_rounded_primary"
+                android:text="🗺️ Ver Mapa"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:elevation="8dp" />
+
             <TextView
                 android:layout_width="280dp"
                 android:layout_height="wrap_content"

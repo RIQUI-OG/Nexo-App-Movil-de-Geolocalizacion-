@@ -71,6 +71,11 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             sendFamilyAlert(userName)
         }
 
+        val btnOpenMap = findViewById<Button>(R.id.btnOpenMap)
+        btnOpenMap.setOnClickListener {
+            startActivity(Intent(this, MapActivity::class.java))
+        }
+
         val btnScheduleTrip = findViewById<Button>(R.id.btnScheduleTrip)
         btnScheduleTrip.setOnClickListener {
             startActivity(Intent(this, TripScheduleActivity::class.java))
@@ -87,6 +92,10 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 // Ya estamos en Home, no hacer nada o simplemente cerrar el drawer
                 Toast.makeText(this, "Ya estás en Inicio", Toast.LENGTH_SHORT).show()
             }
+
+
+
+
             R.id.nav_schedule_trip -> {
                 startActivity(Intent(this, TripScheduleActivity::class.java))
             }

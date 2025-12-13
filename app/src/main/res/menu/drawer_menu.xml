@@ -9,6 +9,10 @@
             android:icon="@drawable/baseline_home_24"
             android:title="Inicio" />
         <item
+            android:id="@+id/nav_map"
+            android:icon="@drawable/baseline_map_24"
+            android:title="Ver Mapa" />
+        <item
             android:id="@+id/nav_schedule_trip"
             android:icon="@drawable/outline_directions_walk_24"
             android:title="Agendar Viaje" />
