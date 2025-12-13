@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@drawable/baseline_home_24"
+            android:title="Inicio" />
+        <item
+            android:id="@+id/nav_schedule_trip"
+            android:icon="@drawable/outline_directions_walk_24"
+            android:title="Agendar Viaje" />
+        <item
+            android:id="@+id/nav_family_location"
+            android:icon="@drawable/outline_explore_nearby_24"
+            android:title="Ubicación Familiar" />
+    </group>
+
+    <item android:title="Opciones">
+        <menu>
+            <item
+                android:id="@+id/nav_settings"
+                android:icon="@drawable/outline_settings_24"
+                android:title="Configuración" />
+            <item
+                android:id="@+id/nav_logout"
+                android:icon="@drawable/ic_arrow_forward"
+                android:title="Cerrar Sesión" />
+        </menu>
+    </item>
+</menu>

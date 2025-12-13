@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">AvanceProyecto</string>
+    <string name="app_name">Nexo</string>
+    <string name="navigation_drawer_open">Abrir cajón de navegación</string>
+    <string name="navigation_drawer_close">Cerrar cajón de navegación</string>
 </resources>
