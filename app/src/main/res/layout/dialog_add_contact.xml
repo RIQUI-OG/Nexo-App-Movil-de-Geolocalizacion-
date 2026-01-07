@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ingresa el correo del contacto"
+        android:textColor="#156082"
+        android:textSize="14sp"
+        android:layout_marginBottom="12dp" />
+
+    <EditText
+        android:id="@+id/etContactEmail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="correo@ejemplo.com"
+        android:inputType="textEmailAddress"
+        android:padding="12dp"
+        android:background="@drawable/edittext_background"
+        android:layout_marginBottom="20dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Selecciona el tipo de contacto:"
+        android:textColor="#156082"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="12dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btnAddAsFamily"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="🩷Familiar"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/button_rounded_primary"
+            android:padding="12dp" />
+
+        <Button
+            android:id="@+id/btnAddAsFriend"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="👤 Amigo"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/button_rounded_secondary"
+            android:padding="12dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

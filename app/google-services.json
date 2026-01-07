@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "253911284545",
+    "firebase_url": "https://ads6-ef8ef-default-rtdb.firebaseio.com",
+    "project_id": "ads6-ef8ef",
+    "storage_bucket": "ads6-ef8ef.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:253911284545:android:41d3e7ba40980605087fc0",
+        "android_client_info": {
+          "package_name": "com.example.avanceproyecto"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOiRN2FS64LIN28F6ywHeoULT_PZ3vERo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

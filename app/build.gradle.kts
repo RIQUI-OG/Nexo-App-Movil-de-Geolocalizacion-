@@ -1,12 +1,12 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    // ELIMINA: alias(libs.plugins.kotlin.compose) ← Esto es para Compose
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.example.avanceproyecto"
-    compileSdk = 35  // Puedes mantener 35, pero 34 es más estable
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.example.avanceproyecto"
@@ -14,7 +14,6 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -27,54 +26,54 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
     }
+
     buildFeatures {
-        viewBinding = true  // ✅ IMPORTANTE: Activa ViewBinding para XML
-        // ELIMINA: compose = true ← Esto desactiva Compose
+        viewBinding = true
     }
 }
 
 dependencies {
+
     // Core Android
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.activity)
+    implementation("androidx.core:core-ktx:1.10.1")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.activity:activity-ktx:1.7.2")
 
-    // Navigation Drawer (esencial para tu menú lateral)
-    implementation(libs.androidx.navigation.fragment)
-    implementation(libs.androidx.navigation.ui)
-    implementation(libs.androidx.drawerlayout)
+    // Navigation Drawer
+    implementation("androidx.navigation:navigation-fragment-ktx:2.6.0")
+    implementation("androidx.navigation:navigation-ui-ktx:2.6.0")
+    implementation("androidx.drawerlayout:drawerlayout:1.2.0")
 
-    // Lifecycle (para ViewModel si lo necesitas después)
-    implementation(libs.androidx.lifecycle.viewmodel)
+    // Firebase (BOM)
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-database-ktx")
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
-    // Test
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+    // Google Maps & Location
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.1.0")
 
-    implementation(libs.play.services.maps)
-    implementation(libs.play.services.location)
+    // RecyclerView (familiares, chats)
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
 
-    // NOTA: Eliminé TODAS las dependencias de Compose:
-    // implementation(libs.androidx.lifecycle.runtime.ktx)
-    // implementation(libs.androidx.activity.compose)
-    // implementation(platform(libs.androidx.compose.bom))
-    // implementation(libs.androidx.ui)
-    // implementation(libs.androidx.ui.graphics)
-    // implementation(libs.androidx.ui.tooling.preview)
-    // implementation(libs.androidx.material3)
-    // androidTestImplementation(platform(libs.androidx.compose.bom))
-    // androidTestImplementation(libs.androidx.ui.test.junit4)
-    // debugImplementation(libs.androidx.ui.tooling)
-    // debugImplementation(libs.androidx.ui.test.manifest)
+    // Glide (imagenes de perfil)
+    implementation("com.github.bumptech.glide:glide:4.16.0")
 
+    // Tests
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 }

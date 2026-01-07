@@ -3,14 +3,11 @@ package com.example.avanceproyecto
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.snackbar.Snackbar
-// IMPORTACIONES NECESARIAS PARA EL MENU
 import androidx.appcompat.widget.Toolbar
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.appcompat.app.ActionBarDrawerToggle
 import com.google.android.material.navigation.NavigationView
 import android.view.MenuItem
-// FIN DE IMPORTACIONES PARA EL MENU
-
 import android.content.DialogInterface
 import android.content.Intent
 import android.widget.Toast
@@ -20,152 +17,253 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.pm.PackageManager
 import android.os.Build
-import android.widget.Button
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.view.GravityCompat // Necesario para cerrar el Drawer
+import androidx.core.view.GravityCompat
+import androidx.cardview.widget.CardView
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.database.FirebaseDatabase
+import android.Manifest
+import android.location.Location
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.example.avanceproyecto.models.Emergency
+import com.google.firebase.Timestamp
 
-class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener { // Implementar Listener
+class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
     private lateinit var drawerLayout: DrawerLayout
+    private lateinit var auth: FirebaseAuth
+    private lateinit var firestore: FirebaseFirestore
+    private lateinit var realtimeDatabase: FirebaseDatabase
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
 
-    // ID único para el canal de notificaciones
+    private var userId: String = ""
+    private var userName: String = ""
+
     private val CHANNEL_ID = "nexo_alerts_channel"
     private val NOTIFICATION_ID = 1
+    private val LOCATION_PERMISSION_REQUEST_CODE = 1001
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
-        // 1. Configurar la Toolbar como ActionBar de la Actividad
+        // Inicializar Firebase
+        auth = FirebaseAuth.getInstance()
+        firestore = FirebaseFirestore.getInstance()
+        realtimeDatabase = FirebaseDatabase.getInstance()
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        // Obtener datos del usuario
+        userId = intent.getStringExtra("USER_ID") ?: auth.currentUser?.uid ?: ""
+        userName = intent.getStringExtra("USER_NAME") ?: "Usuario"
+
+        setupToolbar()
+        setupNavigationDrawer()
+        setupUI()
+        createNotificationChannel()
+        requestLocationPermission()
+    }
+
+    private fun setupToolbar() {
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
-        // Puedes establecer un título si lo deseas
         supportActionBar?.title = "Nexo Seguridad"
+    }
 
-
-        // 2. Enlazar el DrawerLayout y el NavigationView
+    private fun setupNavigationDrawer() {
         drawerLayout = findViewById(R.id.drawer_layout)
         val navView: NavigationView = findViewById(R.id.nav_view)
-        navView.setNavigationItemSelectedListener(this) // Establecer el listener para los clics en el menú
+        navView.setNavigationItemSelectedListener(this)
 
-        // 3. Configurar el Toggle (el ícono de 3 barras)
         val toggle = ActionBarDrawerToggle(
             this,
             drawerLayout,
-            toolbar,
-            R.string.navigation_drawer_open, // Necesitas estos strings en res/values/strings.xml
+            findViewById(R.id.toolbar),
+            R.string.navigation_drawer_open,
             R.string.navigation_drawer_close
         )
         drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
 
+        // Actualizar header del menú con datos del usuario
+        val headerView = navView.getHeaderView(0)
+        val tvUserName = headerView.findViewById<TextView>(R.id.textView)
+        tvUserName.text = auth.currentUser?.email ?: "usuario@ejemplo.com"
+    }
 
-        val userName = intent.getStringExtra("USER_NAME") ?: "Usuario"
+    private fun setupUI() {
         val tvWelcomeTitle = findViewById<TextView>(R.id.tvWelcomeTitle)
         tvWelcomeTitle.text = "¡BIENVENIDO(A), $userName!"
 
-        val btnSendAlert = findViewById<Button>(R.id.btnSendAlert)
-        btnSendAlert.setOnClickListener {
-            sendFamilyAlert(userName)
+        // Botón de Emergencia
+        findViewById<CardView>(R.id.cardEmergency).setOnClickListener {
+            showEmergencyConfirmation()
         }
 
-        val btnOpenMap = findViewById<Button>(R.id.btnOpenMap)
-        btnOpenMap.setOnClickListener {
-            startActivity(Intent(this, MapActivity::class.java))
+        // Botón de Mapa
+        findViewById<CardView>(R.id.cardMap).setOnClickListener {
+            startActivity(Intent(this, MapActivity::class.java).apply {
+                putExtra("USER_ID", userId)
+            })
         }
 
-        val btnScheduleTrip = findViewById<Button>(R.id.btnScheduleTrip)
-        btnScheduleTrip.setOnClickListener {
+        // Botón de Programar Viaje
+        findViewById<CardView>(R.id.cardTrip).setOnClickListener {
             startActivity(Intent(this, TripScheduleActivity::class.java))
         }
 
-        createNotificationChannel()
-    }
-
-    // Implementación del método de la interfaz NavigationView.OnNavigationItemSelectedListener
-    override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        // Manejar la navegación aquí
-        when (item.itemId) {
-            R.id.nav_home -> {
-                // Ya estamos en Home, no hacer nada o simplemente cerrar el drawer
-                Toast.makeText(this, "Ya estás en Inicio", Toast.LENGTH_SHORT).show()
-            }
-
-
-
-
-            R.id.nav_schedule_trip -> {
-                startActivity(Intent(this, TripScheduleActivity::class.java))
-            }
-            R.id.nav_family_location -> {
-                // TODO: Iniciar la actividad de Ubicación Familiar
-                Toast.makeText(this, "Abrir Ubicación Familiar", Toast.LENGTH_SHORT).show()
-            }
-            R.id.nav_settings -> {
-                // TODO: Iniciar la actividad de Configuración
-                Toast.makeText(this, "Abrir Configuración", Toast.LENGTH_SHORT).show()
-            }
-            R.id.nav_logout -> {
-                // TODO: Lógica de Cerrar Sesión (ej. ir a la pantalla de Login)
-                Toast.makeText(this, "Cerrar Sesión", Toast.LENGTH_SHORT).show()
-            }
+        // Botón de Contactos
+        findViewById<CardView>(R.id.cardContacts).setOnClickListener {
+            startActivity(Intent(this, ContactsActivity::class.java).apply {
+                putExtra("USER_ID", userId)
+            })
         }
 
-        // Cierra el cajón después de la selección
-        drawerLayout.closeDrawer(GravityCompat.START)
-        return true
-    }
-
-    // Modificar onBackPressed para cerrar el Navigation Drawer si está abierto
-    override fun onBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            drawerLayout.closeDrawer(GravityCompat.START)
-        } else {
-            showExitDialog() // Reutilizamos tu lógica de salir
+        // Botón de Chats (próximamente)
+        findViewById<CardView>(R.id.cardChats).setOnClickListener {
+            Toast.makeText(this, "💬 Función de chats próximamente", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // [Mantener tus otras funciones (sendFamilyAlert, createNotificationChannel, etc.) aquí...]
-    private fun sendFamilyAlert(userName: String) {
-        // [CÓDIGO DE sendFamilyAlert AQUÍ...]
-        // Verificar permisos para notificaciones (Android 13+)
+    private fun showEmergencyConfirmation() {
+        AlertDialog.Builder(this)
+            .setTitle("⚠️ Alerta de Emergencia")
+            .setMessage("¿Estás seguro de enviar una alerta de emergencia a tu familia?\n\nSe compartirá tu ubicación actual.")
+            .setPositiveButton("SÍ, ENVIAR") { _, _ ->
+                sendEmergencyAlert()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun sendEmergencyAlert() {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestLocationPermission()
+            return
+        }
+
+        fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
+            location?.let {
+                saveEmergencyToFirebase(it.latitude, it.longitude)
+                sendNotificationToFamily(it.latitude, it.longitude)
+                showLocalNotification(it.latitude, it.longitude)
+            } ?: run {
+                Toast.makeText(this, "No se pudo obtener la ubicación", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun saveEmergencyToFirebase(latitude: Double, longitude: Double) {
+        val emergency = Emergency(
+            emergencyId = firestore.collection("emergencies").document().id,
+            userId = userId,
+            userName = userName,
+            latitude = latitude,
+            longitude = longitude,
+            timestamp = Timestamp.now(),
+            isActive = true,
+            audioUrl = ""
+        )
+
+        firestore.collection("emergencies")
+            .document(emergency.emergencyId)
+            .set(emergency)
+            .addOnSuccessListener {
+                Toast.makeText(this, "✅ Alerta enviada correctamente", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+
+        // También actualizar ubicación en Realtime Database
+        val locationData = mapOf(
+            "latitude" to latitude,
+            "longitude" to longitude,
+            "timestamp" to System.currentTimeMillis(),
+            "isEmergency" to true
+        )
+
+        realtimeDatabase.getReference("locations/$userId")
+            .setValue(locationData)
+    }
+
+    private fun sendNotificationToFamily(latitude: Double, longitude: Double) {
+        // Obtener contactos familiares
+        firestore.collection("connections")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("type", "family")
+            .whereEqualTo("status", "accepted")
+            .get()
+            .addOnSuccessListener { documents ->
+                for (document in documents) {
+                    val connectedUserId = document.getString("connectedUserId") ?: continue
+
+                    // Aquí implementarías FCM para enviar notificaciones push
+                    // Por ahora solo guardamos la notificación en Firestore
+                    val notificationData = mapOf(
+                        "fromUserId" to userId,
+                        "fromUserName" to userName,
+                        "toUserId" to connectedUserId,
+                        "type" to "emergency",
+                        "latitude" to latitude,
+                        "longitude" to longitude,
+                        "timestamp" to Timestamp.now(),
+                        "read" to false
+                    )
+
+                    firestore.collection("notifications")
+                        .add(notificationData)
+                }
+
+                Snackbar.make(
+                    findViewById(android.R.id.content),
+                    "✅ Tu familia ha sido notificada",
+                    Snackbar.LENGTH_LONG
+                ).show()
+            }
+    }
+
+    private fun showLocalNotification(latitude: Double, longitude: Double) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                // Solicitar permiso
-                ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 100)
+            if (ActivityCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    100
+                )
                 return
             }
         }
 
-        // Crear y mostrar la notificación
         val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.logo_nexo)  // Usa tu logo o un icono de alerta
+            .setSmallIcon(R.drawable.logo_nexo)
             .setContentTitle("🚨 Alerta de Seguridad Enviada")
             .setContentText("$userName ha compartido su ubicación con la familia")
-            .setStyle(NotificationCompat.BigTextStyle()
-                .bigText("$userName ha activado una alerta de seguridad. Tu familia ha recibido tu ubicación actual y será notificada.\n\nUbicación compartida: ${getSimulatedLocation()}"))
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("$userName ha activado una alerta de seguridad. Tu familia ha recibido tu ubicación actual.\n\nLat: $latitude, Lon: $longitude")
+            )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
 
         with(NotificationManagerCompat.from(this)) {
             notify(NOTIFICATION_ID, notificationBuilder.build())
         }
-
-        // Mostrar confirmación en la app
-        Snackbar.make(
-            findViewById(android.R.id.content),
-            "✅ Alerta enviada a tu familia",
-            Snackbar.LENGTH_LONG
-        ).show()
-
-        Toast.makeText(this, "Tu familia ha sido notificada con tu ubicación", Toast.LENGTH_SHORT).show()
     }
 
     private fun createNotificationChannel() {
-        // [CÓDIGO DE createNotificationChannel AQUÍ...]
-        // Crear el canal solo para Android 8.0+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val name = "Alertas de Seguridad"
             val descriptionText = "Notificaciones de alerta y ubicación familiar"
@@ -179,36 +277,80 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     }
 
-    private fun getSimulatedLocation(): String {
-        // [CÓDIGO DE getSimulatedLocation AQUÍ...]
-        val locations = listOf(
-            "Casa - Zona Residencial Norte",
-            "Trabajo - Centro Comercial Plaza",
-            "Parque Central",
-            "Avenida Principal 123",
-            "Zona Universitaria"
-        )
-        return locations.random()
+    private fun requestLocationPermission() {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
+        }
+    }
+
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.nav_home -> {
+                Toast.makeText(this, "Ya estás en Inicio", Toast.LENGTH_SHORT).show()
+            }
+            R.id.nav_schedule_trip -> {
+                startActivity(Intent(this, TripScheduleActivity::class.java))
+            }
+            R.id.nav_family_location -> {
+                startActivity(Intent(this, MapActivity::class.java).apply {
+                    putExtra("USER_ID", userId)
+                })
+            }
+            R.id.nav_settings -> {
+                Toast.makeText(this, "Configuración próximamente", Toast.LENGTH_SHORT).show()
+            }
+            R.id.nav_logout -> {
+                showLogoutDialog()
+            }
+        }
+
+        drawerLayout.closeDrawer(GravityCompat.START)
+        return true
+    }
+
+    private fun showLogoutDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Cerrar Sesión")
+            .setMessage("¿Estás seguro de cerrar sesión?")
+            .setPositiveButton("Sí") { _, _ ->
+                auth.signOut()
+                startActivity(Intent(this, MainActivity::class.java))
+                finish()
+            }
+            .setNegativeButton("No", null)
+            .show()
+    }
+
+    override fun onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START)
+        } else {
+            showExitDialog()
+        }
     }
 
     private fun showExitDialog() {
-        // [CÓDIGO DE showExitDialog AQUÍ...]
         val exitAlert = AlertDialog.Builder(this)
         exitAlert.setTitle("Salir")
         exitAlert.setMessage("¿Seguro que quieres salir de la aplicación?")
 
-        exitAlert.setPositiveButton("Sí") { dialogInterface: DialogInterface, _: Int ->
+        exitAlert.setPositiveButton("Sí") { _: DialogInterface, _: Int ->
             finishAffinity()
-            Toast.makeText(this, "¡Hasta pronto!", Toast.LENGTH_SHORT).show()
         }
 
         exitAlert.setNegativeButton("No") { dialogInterface: DialogInterface, _: Int ->
             dialogInterface.dismiss()
-            Snackbar.make(
-                findViewById(android.R.id.content),
-                "Continuamos en la app",
-                Snackbar.LENGTH_SHORT
-            ).show()
         }
 
         exitAlert.setCancelable(false)
@@ -220,14 +362,17 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
-        // [CÓDIGO DE onRequestPermissionsResult AQUÍ...]
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 100) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                val userName = intent.getStringExtra("USER_NAME") ?: "Usuario"
-                sendFamilyAlert(userName)
-            } else {
-                Toast.makeText(this, "Se necesitan permisos para enviar alertas", Toast.LENGTH_SHORT).show()
+        when (requestCode) {
+            LOCATION_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "Permisos de ubicación concedidos", Toast.LENGTH_SHORT).show()
+                }
+            }
+            100 -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    sendEmergencyAlert()
+                }
             }
         }
     }

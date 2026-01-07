@@ -25,113 +25,278 @@
             app:layout_constraintTop_toTopOf="parent"
             app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
-        <ImageView
-            android:id="@+id/imgLogo"
-            android:layout_width="100dp"
-            android:layout_height="80dp"
-            android:layout_marginTop="100dp"
-            android:contentDescription="Logo de Nexo"
-            android:src="@drawable/logo_nexo"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/tvWelcomeTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="¡BIENVENIDO!"
-            android:textColor="#156082"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/imgLogo" />
-
-        <TextView
-            android:id="@+id/tvSubtitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Es un placer tenerte aquí"
-            android:textColor="#156082"
-            android:textSize="16sp"
-            android:alpha="0.8"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvWelcomeTitle" />
-
-        <LinearLayout
-            android:layout_width="0dp"
+        <ScrollView
+            android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="60dp"
-            android:layout_marginStart="24dp"
-            android:layout_marginEnd="24dp"
-            android:layout_marginBottom="40dp"
-            android:orientation="vertical"
-            android:gravity="center"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvSubtitle">
+            app:layout_constraintTop_toBottomOf="@id/toolbar"
+            app:layout_constraintBottom_toBottomOf="parent">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="MAPA"
-                android:textColor="#FFFFFF"
-                android:textSize="18sp"
-                android:alpha="0.8"
-                android:padding="20dp" />
+                android:orientation="vertical"
+                android:padding="20dp">
 
-            <Button
-                android:id="@+id/btnSendAlert"
-                android:layout_width="250dp"
-                android:layout_height="55dp"
-                android:layout_marginTop="20dp"
-                android:background="@drawable/button_rounded_primary"
-                android:text="🚨 ENVIAR ALERTA"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:elevation="8dp" />
+                <!-- Header -->
+                <ImageView
+                    android:id="@+id/imgLogo"
+                    android:layout_width="80dp"
+                    android:layout_height="60dp"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="20dp"
+                    android:contentDescription="Logo de Nexo"
+                    android:src="@drawable/logo_nexo" />
 
-            <Button
-                android:id="@+id/btnScheduleTrip"
-                android:layout_width="250dp"
-                android:layout_height="55dp"
-                android:layout_marginTop="20dp"
-                android:background="@drawable/button_rounded_secondary"
-                android:text="🗓️ PROGRAMAR VIAJE"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:elevation="8dp" />
+                <TextView
+                    android:id="@+id/tvWelcomeTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="12dp"
+                    android:text="¡BIENVENIDO!"
+                    android:textColor="#156082"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
 
-            <Button
-                android:id="@+id/btnOpenMap"
-                android:layout_width="250dp"
-                android:layout_height="55dp"
-                android:layout_marginTop="20dp"
-                android:background="@drawable/button_rounded_primary"
-                android:text="🗺️ Ver Mapa"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:elevation="8dp" />
+                <TextView
+                    android:id="@+id/tvSubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="4dp"
+                    android:alpha="0.8"
+                    android:text="Mantén a tu familia segura"
+                    android:textColor="#156082"
+                    android:textSize="14sp" />
 
-            <TextView
-                android:layout_width="280dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Tu familia recibirá tu ubicación actual"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp"
-                android:alpha="0.8"
-                android:gravity="center" />
+                <!-- Botón de Emergencia GRANDE -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardEmergency"
+                    android:layout_width="match_parent"
+                    android:layout_height="180dp"
+                    android:layout_marginTop="30dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="12dp"
+                    android:backgroundTint="#E53935">
 
-        </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🚨"
+                            android:textSize="64sp" />
+
+                        <Button
+                            android:id="@+id/btnSendAlert"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@android:color/white"
+                            android:text="EMERGENCIA"
+                            android:textColor="#E53935"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:padding="16dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Presiona para alertar a tu familia"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:alpha="0.9" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+                <!-- Grid de Opciones -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="20dp">
+
+                    <!-- Fila 1 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:baselineAligned="false">
+
+                        <!-- Mapa -->
+                        <androidx.cardview.widget.CardView
+                            android:id="@+id/cardMap"
+                            android:layout_width="0dp"
+                            android:layout_height="140dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="8dp"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="8dp"
+                            android:backgroundTint="#FFFFFF">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:orientation="vertical"
+                                android:gravity="center"
+                                android:padding="16dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="🗺️"
+                                    android:textSize="48sp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="8dp"
+                                    android:text="Mapa"
+                                    android:textColor="#156082"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold" />
+
+                            </LinearLayout>
+
+                        </androidx.cardview.widget.CardView>
+
+                        <!-- Programar Viaje -->
+                        <androidx.cardview.widget.CardView
+                            android:id="@+id/cardTrip"
+                            android:layout_width="0dp"
+                            android:layout_height="140dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="8dp"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="8dp"
+                            android:backgroundTint="#FFFFFF">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:orientation="vertical"
+                                android:gravity="center"
+                                android:padding="16dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="🗓️"
+                                    android:textSize="48sp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="8dp"
+                                    android:text="Programar Viaje"
+                                    android:textColor="#156082"
+                                    android:textSize="14sp"
+                                    android:textStyle="bold"
+                                    android:gravity="center" />
+
+                            </LinearLayout>
+
+                        </androidx.cardview.widget.CardView>
+
+                    </LinearLayout>
+
+                    <!-- Fila 2 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="16dp"
+                        android:baselineAligned="false">
+
+                        <!-- Contactos -->
+                        <androidx.cardview.widget.CardView
+                            android:id="@+id/cardContacts"
+                            android:layout_width="0dp"
+                            android:layout_height="140dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="8dp"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="8dp"
+                            android:backgroundTint="#FFFFFF">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:orientation="vertical"
+                                android:gravity="center"
+                                android:padding="16dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="👥"
+                                    android:textSize="48sp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="8dp"
+                                    android:text="Mis Contactos"
+                                    android:textColor="#156082"
+                                    android:textSize="14sp"
+                                    android:textStyle="bold"
+                                    android:gravity="center" />
+
+                            </LinearLayout>
+
+                        </androidx.cardview.widget.CardView>
+
+                        <!-- Chats -->
+                        <androidx.cardview.widget.CardView
+                            android:id="@+id/cardChats"
+                            android:layout_width="0dp"
+                            android:layout_height="140dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="8dp"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="8dp"
+                            android:backgroundTint="#FFFFFF">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:orientation="vertical"
+                                android:gravity="center"
+                                android:padding="16dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="💬"
+                                    android:textSize="48sp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="8dp"
+                                    android:text="Chats"
+                                    android:textColor="#156082"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold" />
+
+                            </LinearLayout>
+
+                        </androidx.cardview.widget.CardView>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </ScrollView>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
