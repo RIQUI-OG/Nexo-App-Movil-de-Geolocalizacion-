@@ -1,6 +1,8 @@
 package com.example.avanceproyecto
 
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
@@ -10,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.avanceproyecto.adapters.ContactsAdapter
 import com.example.avanceproyecto.models.UserConnection
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.Timestamp
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -17,12 +20,18 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 class ContactsActivity : AppCompatActivity() {
 
     private lateinit var firestore: FirebaseFirestore
+    private lateinit var auth: FirebaseAuth
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: ContactsAdapter
     private lateinit var fabAddContact: FloatingActionButton
 
     private var userId: String = ""
     private val contactsList = mutableListOf<UserConnection>()
+
+    companion object {
+        private const val TAG = "ContactsActivity"
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,8 +40,9 @@ class ContactsActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Mis Contactos"
 
+        auth = FirebaseAuth.getInstance()
         firestore = FirebaseFirestore.getInstance()
-        userId = intent.getStringExtra("USER_ID") ?: ""
+        userId = intent.getStringExtra("USER_ID") ?: auth.currentUser?.uid ?: ""
 
         setupRecyclerView()
         setupFab()
@@ -99,7 +109,7 @@ class ContactsActivity : AppCompatActivity() {
             .get()
             .addOnSuccessListener { documents ->
                 if (documents.isEmpty) {
-                    Toast.makeText(this, "Usuario no encontrado", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "❌ Usuario no encontrado", Toast.LENGTH_SHORT).show()
                     return@addOnSuccessListener
                 }
 
@@ -109,7 +119,7 @@ class ContactsActivity : AppCompatActivity() {
                 val connectedUserEmail = userDoc.getString("email") ?: ""
 
                 if (connectedUserId == userId) {
-                    Toast.makeText(this, "No puedes agregarte a ti mismo", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "❌ No puedes agregarte a ti mismo", Toast.LENGTH_SHORT).show()
                     return@addOnSuccessListener
                 }
 
@@ -120,7 +130,7 @@ class ContactsActivity : AppCompatActivity() {
                     .get()
                     .addOnSuccessListener { existing ->
                         if (!existing.isEmpty) {
-                            Toast.makeText(this, "Ya tienes agregado a este contacto", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this, "⚠️ Ya tienes agregado a este contacto", Toast.LENGTH_SHORT).show()
                             return@addOnSuccessListener
                         }
 
@@ -146,19 +156,19 @@ class ContactsActivity : AppCompatActivity() {
 
                                 Toast.makeText(
                                     this,
-                                    "✅ Contacto agregado como ${if (type == "family") "Familiar" else "Amigo"}",
+                                    "✅ ${connectedUserName} agregado como ${if (type == "family") "Familiar" else "Amigo"}",
                                     Toast.LENGTH_SHORT
                                 ).show()
 
                                 loadContacts()
                             }
                             .addOnFailureListener { e ->
-                                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this, "❌ Error: ${e.message}", Toast.LENGTH_SHORT).show()
                             }
                     }
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Error al buscar usuario: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "❌ Error al buscar usuario: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -204,65 +214,137 @@ class ContactsActivity : AppCompatActivity() {
                 adapter.notifyDataSetChanged()
 
                 if (contactsList.isEmpty()) {
-                    Toast.makeText(this, "No tienes contactos aún", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "📝 No tienes contactos aún. ¡Agrega a tu familia y amigos!", Toast.LENGTH_LONG).show()
                 }
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Error al cargar contactos: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "❌ Error al cargar contactos: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
     private fun showConnectionOptions(connection: UserConnection) {
-        val options = arrayOf("Ver en mapa", "Cambiar tipo", "Eliminar contacto")
+        Log.d(TAG, "showConnectionOptions called for: ${connection.connectedUserName}")
+
+        val options = arrayOf(
+            "🗺️ Ver en mapa",
+            "🔄 Cambiar tipo",
+            "🗑️ Eliminar contacto"
+        )
 
         AlertDialog.Builder(this)
             .setTitle(connection.connectedUserName)
-            .setItems(options) { _, which ->
+            .setItems(options) { dialog, which ->
+                Log.d(TAG, "Option selected: $which")
                 when (which) {
-                    0 -> viewOnMap(connection)
-                    1 -> changeConnectionType(connection)
-                    2 -> deleteConnection(connection)
+                    0 -> {
+                        Log.d(TAG, "Ver en mapa selected")
+                        viewOnMap(connection)
+                    }
+                    1 -> {
+                        Log.d(TAG, "Cambiar tipo selected")
+                        changeConnectionType(connection)
+                    }
+                    2 -> {
+                        Log.d(TAG, "Eliminar selected")
+                        deleteConnection(connection)
+                    }
                 }
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancelar") { dialog, _ ->
+                dialog.dismiss()
             }
             .show()
     }
 
     private fun viewOnMap(connection: UserConnection) {
-        // Aquí implementarías abrir el mapa centrado en ese contacto
-        Toast.makeText(this, "Abriendo mapa de ${connection.connectedUserName}", Toast.LENGTH_SHORT).show()
+        Log.d(TAG, "viewOnMap called")
+        Log.d(TAG, "User ID: $userId")
+        Log.d(TAG, "Contact ID: ${connection.connectedUserId}")
+        Log.d(TAG, "Contact Name: ${connection.connectedUserName}")
+
+        try {
+            val intent = Intent(this, MapActivity::class.java).apply {
+                putExtra("USER_ID", userId)
+                putExtra("FOCUS_CONTACT_ID", connection.connectedUserId)
+                putExtra("FOCUS_CONTACT_NAME", connection.connectedUserName)
+            }
+
+            Log.d(TAG, "Starting MapActivity...")
+            startActivity(intent)
+
+            Toast.makeText(
+                this,
+                "🗺️ Abriendo ubicación de ${connection.connectedUserName}...",
+                Toast.LENGTH_SHORT
+            ).show()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error starting MapActivity", e)
+            Toast.makeText(this, "❌ Error al abrir mapa: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun changeConnectionType(connection: UserConnection) {
         val newType = if (connection.type == "family") "friend" else "family"
+        val newTypeText = if (newType == "family") "Familiar" else "Amigo"
 
-        firestore.collection("connections")
-            .document(connection.connectionId)
-            .update("type", newType)
-            .addOnSuccessListener {
-                Toast.makeText(
-                    this,
-                    "Ahora ${connection.connectedUserName} es tu ${if (newType == "family") "Familiar" else "Amigo"}",
-                    Toast.LENGTH_SHORT
-                ).show()
-                loadContacts()
-            }
-    }
-
-    private fun deleteConnection(connection: UserConnection) {
         AlertDialog.Builder(this)
-            .setTitle("Eliminar Contacto")
-            .setMessage("¿Estás seguro de eliminar a ${connection.connectedUserName}?")
-            .setPositiveButton("Eliminar") { _, _ ->
+            .setTitle("Cambiar tipo de contacto")
+            .setMessage("¿Cambiar a ${connection.connectedUserName} como ${newTypeText}?")
+            .setPositiveButton("Sí, cambiar") { _, _ ->
                 firestore.collection("connections")
                     .document(connection.connectionId)
-                    .delete()
+                    .update("type", newType)
                     .addOnSuccessListener {
-                        Toast.makeText(this, "Contacto eliminado", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this,
+                            "✅ ${connection.connectedUserName} ahora es tu ${newTypeText}",
+                            Toast.LENGTH_SHORT
+                        ).show()
                         loadContacts()
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this, "❌ Error: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
             }
             .setNegativeButton("Cancelar", null)
             .show()
+    }
+
+    private fun deleteConnection(connection: UserConnection) {
+        AlertDialog.Builder(this)
+            .setTitle("⚠️ Eliminar Contacto")
+            .setMessage("¿Estás seguro de eliminar a ${connection.connectedUserName}?\n\nYa no podrán ver su ubicación mutua.")
+            .setPositiveButton("Sí, eliminar") { _, _ ->
+                firestore.collection("connections")
+                    .document(connection.connectionId)
+                    .delete()
+                    .addOnSuccessListener {
+                        // También eliminar la conexión inversa
+                        deleteReverseConnection(connection.connectedUserId)
+
+                        Toast.makeText(this, "✅ Contacto eliminado", Toast.LENGTH_SHORT).show()
+                        loadContacts()
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this, "❌ Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun deleteReverseConnection(connectedUserId: String) {
+        // Buscar y eliminar la conexión inversa
+        firestore.collection("connections")
+            .whereEqualTo("userId", connectedUserId)
+            .whereEqualTo("connectedUserId", userId)
+            .get()
+            .addOnSuccessListener { documents ->
+                for (document in documents) {
+                    document.reference.delete()
+                }
+            }
     }
 
     override fun onSupportNavigateUp(): Boolean {

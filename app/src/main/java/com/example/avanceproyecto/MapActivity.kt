@@ -2,6 +2,7 @@ package com.example.avanceproyecto
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
@@ -43,6 +44,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
 
     private var currentLocation: Location? = null
     private var userId: String = ""
+    private var focusContactId: String? = null
+    private var focusContactName: String? = null
     private val contactMarkers = mutableMapOf<String, Marker>()
     private var myLocationMarker: Marker? = null
 
@@ -55,6 +58,11 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_map)
 
+        // Obtener datos del intent
+        userId = intent.getStringExtra("USER_ID") ?: ""
+        focusContactId = intent.getStringExtra("FOCUS_CONTACT_ID")
+        focusContactName = intent.getStringExtra("FOCUS_CONTACT_NAME")
+
         // Configurar toolbar y drawer
         setupToolbarAndDrawer()
 
@@ -62,7 +70,10 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
         auth = FirebaseAuth.getInstance()
         firestore = FirebaseFirestore.getInstance()
         realtimeDatabase = FirebaseDatabase.getInstance()
-        userId = intent.getStringExtra("USER_ID") ?: auth.currentUser?.uid ?: ""
+
+        if (userId.isEmpty()) {
+            userId = auth.currentUser?.uid ?: ""
+        }
 
         // Inicializar cliente de ubicación
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -96,7 +107,12 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
     private fun setupToolbarAndDrawer() {
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
-        supportActionBar?.title = "Ubicaciones"
+
+        if (focusContactName != null) {
+            supportActionBar?.title = "📍 $focusContactName"
+        } else {
+            supportActionBar?.title = "Ubicaciones"
+        }
 
         drawerLayout = findViewById(R.id.drawer_layout_map)
         val navView: NavigationView = findViewById(R.id.nav_view_map)
@@ -119,16 +135,22 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
                 finish()
             }
             R.id.nav_schedule_trip -> {
-                // Navegar a programar viaje
+                startActivity(Intent(this, TripScheduleActivity::class.java))
             }
             R.id.nav_family_location -> {
                 Toast.makeText(this, "Ya estás en ubicaciones", Toast.LENGTH_SHORT).show()
+            }
+            R.id.nav_contacts -> {
+                startActivity(Intent(this, ContactsActivity::class.java).apply {
+                    putExtra("USER_ID", userId)
+                })
             }
             R.id.nav_settings -> {
                 Toast.makeText(this, "Configuración próximamente", Toast.LENGTH_SHORT).show()
             }
             R.id.nav_logout -> {
                 auth.signOut()
+                startActivity(Intent(this, MainActivity::class.java))
                 finish()
             }
         }
@@ -187,6 +209,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
         mMap.uiSettings.isZoomControlsEnabled = true
         mMap.uiSettings.isCompassEnabled = true
         mMap.uiSettings.isMyLocationButtonEnabled = true
+        mMap.uiSettings.isMapToolbarEnabled = true
 
         // Habilitar mi ubicación si hay permisos
         if (ActivityCompat.checkSelfPermission(
@@ -199,7 +222,9 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
 
         // Si ya tenemos la ubicación, centrar el mapa
         currentLocation?.let {
-            centerMapOnLocation(it)
+            if (focusContactId == null) {
+                centerMapOnLocation(it)
+            }
         } ?: run {
             // Ubicación por defecto (México City) si no hay GPS
             val defaultLocation = LatLng(19.432608, -99.133209)
@@ -219,11 +244,14 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
                 MarkerOptions()
                     .position(latLng)
                     .title("Tu ubicación")
+                    .snippet("Lat: ${location.latitude}, Lon: ${location.longitude}")
                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
             )
 
-            // Centrar cámara solo la primera vez
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
+            // Centrar cámara solo si no estamos enfocando un contacto
+            if (focusContactId == null) {
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
+            }
         } else {
             // Actualizar posición del marcador existente
             myLocationMarker?.position = latLng
@@ -232,44 +260,78 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
 
     private fun centerMapOnLocation(location: Location) {
         val latLng = LatLng(location.latitude, location.longitude)
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
     }
 
     private fun loadContactsLocations() {
-        // Obtener lista de contactos
         firestore.collection("connections")
             .whereEqualTo("userId", userId)
             .whereEqualTo("status", "accepted")
             .get()
             .addOnSuccessListener { documents ->
+
+                if (documents.isEmpty()) {
+                    Toast.makeText(this, "No hay contactos", Toast.LENGTH_SHORT).show()
+                    return@addOnSuccessListener
+                }
+
                 for (document in documents) {
                     val connectedUserId = document.getString("connectedUserId") ?: continue
                     val connectedUserName = document.getString("connectedUserName") ?: "Contacto"
                     val type = document.getString("type") ?: "friend"
 
-                    // Escuchar cambios en tiempo real de la ubicación de cada contacto
+
+                    if (focusContactId != null && connectedUserId != focusContactId) {
+                        continue
+                    }
+
                     listenToContactLocation(connectedUserId, connectedUserName, type)
                 }
             }
+            .addOnFailureListener {
+                Toast.makeText(this, "Error al cargar contactos", Toast.LENGTH_SHORT).show()
+            }
     }
+
 
     private fun listenToContactLocation(contactId: String, contactName: String, type: String) {
         realtimeDatabase.getReference("locations/$contactId")
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
+                    if (!snapshot.exists()) {
+                        // El contacto aún no ha compartido su ubicación
+                        if (contactId == focusContactId) {
+                            Toast.makeText(
+                                this@MapActivity,
+                                "⚠️ $contactName aún no ha compartido su ubicación",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                        return
+                    }
+
                     val latitude = snapshot.child("latitude").getValue(Double::class.java)
                     val longitude = snapshot.child("longitude").getValue(Double::class.java)
                     val isEmergency = snapshot.child("isEmergency").getValue(Boolean::class.java) ?: false
 
                     if (latitude != null && longitude != null) {
                         updateContactMarker(contactId, contactName, latitude, longitude, type, isEmergency)
+
+                        // Si este es el contacto que queremos enfocar, centrar el mapa
+                        if (contactId == focusContactId && ::mMap.isInitialized) {
+                            val latLng = LatLng(latitude, longitude)
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16f))
+
+                            // Mostrar info del marcador
+                            contactMarkers[contactId]?.showInfoWindow()
+                        }
                     }
                 }
 
                 override fun onCancelled(error: DatabaseError) {
                     Toast.makeText(
                         this@MapActivity,
-                        "Error al obtener ubicación de $contactName",
+                        "❌ Error al obtener ubicación de $contactName",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -293,14 +355,19 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
             else -> BitmapDescriptorFactory.HUE_ORANGE
         }
 
-        val title = if (isEmergency) "🚨 EMERGENCIA - $contactName" else contactName
-        val snippet = if (type == "family") "👨‍👩‍👧‍👦 Familiar" else "👤 Amigo"
+        val title = if (isEmergency) "🚨 EMERGENCIA - $contactName" else "📍 $contactName"
+        val snippet = when {
+            isEmergency -> "¡ALERTA DE EMERGENCIA! Lat: $latitude, Lon: $longitude"
+            type == "family" -> "👨‍👩‍👧‍👦 Familiar • Lat: $latitude, Lon: $longitude"
+            else -> "👤 Amigo • Lat: $latitude, Lon: $longitude"
+        }
 
         if (contactMarkers.containsKey(contactId)) {
             // Actualizar marcador existente
             contactMarkers[contactId]?.apply {
                 position = latLng
                 this.title = title
+                this.snippet = snippet
             }
         } else {
             // Crear nuevo marcador
@@ -338,7 +405,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
                         }
                     }
                 } else {
-                    Toast.makeText(this, "Permiso de ubicación denegado", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "❌ Permiso de ubicación denegado", Toast.LENGTH_SHORT).show()
                 }
             }
         }

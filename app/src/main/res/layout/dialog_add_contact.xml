@@ -20,6 +20,7 @@
         android:layout_height="wrap_content"
         android:hint="correo@ejemplo.com"
         android:inputType="textEmailAddress"
+        android:textColor="@color/black"
         android:padding="12dp"
         android:background="@drawable/edittext_background"
         android:layout_marginBottom="20dp" />

@@ -45,6 +45,7 @@
         android:fitsSystemWindows="true"
         app:headerLayout="@layout/nav_header_main"
         app:menu="@menu/drawer_menu"
+        android:background="#FFFFFF"
         app:itemTextColor="#156082"
         app:itemIconTint="#156082"/>
 

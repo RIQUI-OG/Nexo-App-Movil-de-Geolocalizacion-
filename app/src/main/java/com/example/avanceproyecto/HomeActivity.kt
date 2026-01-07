@@ -89,42 +89,43 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
 
-        // Actualizar header del menú con datos del usuario
-        val headerView = navView.getHeaderView(0)
-        val tvUserName = headerView.findViewById<TextView>(R.id.textView)
-        tvUserName.text = auth.currentUser?.email ?: "usuario@ejemplo.com"
     }
 
     private fun setupUI() {
         val tvWelcomeTitle = findViewById<TextView>(R.id.tvWelcomeTitle)
         tvWelcomeTitle.text = "¡BIENVENIDO(A), $userName!"
 
-        // Botón de Emergencia
-        findViewById<CardView>(R.id.cardEmergency).setOnClickListener {
+        // Botón de Emergencia - Click en toda la tarjeta
+        val cardEmergency = findViewById<CardView>(R.id.cardEmergency)
+        cardEmergency.setOnClickListener {
             showEmergencyConfirmation()
         }
 
         // Botón de Mapa
-        findViewById<CardView>(R.id.cardMap).setOnClickListener {
-            startActivity(Intent(this, MapActivity::class.java).apply {
-                putExtra("USER_ID", userId)
-            })
+        val cardMap = findViewById<CardView>(R.id.cardMap)
+        cardMap.setOnClickListener {
+            val intent = Intent(this, MapActivity::class.java)
+            intent.putExtra("USER_ID", userId)
+            startActivity(intent)
         }
 
         // Botón de Programar Viaje
-        findViewById<CardView>(R.id.cardTrip).setOnClickListener {
+        val cardTrip = findViewById<CardView>(R.id.cardTrip)
+        cardTrip.setOnClickListener {
             startActivity(Intent(this, TripScheduleActivity::class.java))
         }
 
         // Botón de Contactos
-        findViewById<CardView>(R.id.cardContacts).setOnClickListener {
-            startActivity(Intent(this, ContactsActivity::class.java).apply {
-                putExtra("USER_ID", userId)
-            })
+        val cardContacts = findViewById<CardView>(R.id.cardContacts)
+        cardContacts.setOnClickListener {
+            val intent = Intent(this, ContactsActivity::class.java)
+            intent.putExtra("USER_ID", userId)
+            startActivity(intent)
         }
 
         // Botón de Chats (próximamente)
-        findViewById<CardView>(R.id.cardChats).setOnClickListener {
+        val cardChats = findViewById<CardView>(R.id.cardChats)
+        cardChats.setOnClickListener {
             Toast.makeText(this, "💬 Función de chats próximamente", Toast.LENGTH_SHORT).show()
         }
     }
@@ -156,7 +157,7 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 sendNotificationToFamily(it.latitude, it.longitude)
                 showLocalNotification(it.latitude, it.longitude)
             } ?: run {
-                Toast.makeText(this, "No se pudo obtener la ubicación", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "❌ No se pudo obtener la ubicación", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -180,10 +181,10 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 Toast.makeText(this, "✅ Alerta enviada correctamente", Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "❌ Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
 
-        // También actualizar ubicación en Realtime Database
+        // También actualizar ubicación en Realtime Database con estado de emergencia
         val locationData = mapOf(
             "latitude" to latitude,
             "longitude" to longitude,
@@ -206,8 +207,7 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 for (document in documents) {
                     val connectedUserId = document.getString("connectedUserId") ?: continue
 
-                    // Aquí implementarías FCM para enviar notificaciones push
-                    // Por ahora solo guardamos la notificación en Firestore
+                    // Guardar notificación en Firestore
                     val notificationData = mapOf(
                         "fromUserId" to userId,
                         "fromUserName" to userName,
@@ -303,12 +303,17 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 startActivity(Intent(this, TripScheduleActivity::class.java))
             }
             R.id.nav_family_location -> {
-                startActivity(Intent(this, MapActivity::class.java).apply {
-                    putExtra("USER_ID", userId)
-                })
+                val intent = Intent(this, MapActivity::class.java)
+                intent.putExtra("USER_ID", userId)
+                startActivity(intent)
+            }
+            R.id.nav_contacts -> {
+                val intent = Intent(this, ContactsActivity::class.java)
+                intent.putExtra("USER_ID", userId)
+                startActivity(intent)
             }
             R.id.nav_settings -> {
-                Toast.makeText(this, "Configuración próximamente", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "⚙️ Configuración próximamente", Toast.LENGTH_SHORT).show()
             }
             R.id.nav_logout -> {
                 showLogoutDialog()
@@ -366,7 +371,7 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         when (requestCode) {
             LOCATION_PERMISSION_REQUEST_CODE -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, "Permisos de ubicación concedidos", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "✅ Permisos de ubicación concedidos", Toast.LENGTH_SHORT).show()
                 }
             }
             100 -> {
