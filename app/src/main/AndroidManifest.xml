@@ -87,6 +87,11 @@
             android:name=".PerfilActivity"
             android:exported="false" />
 
+        <!-- Chat -->
+        <activity
+            android:name=".ChatActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

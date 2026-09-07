@@ -45,7 +45,7 @@
                     android:layout_width="60dp"
                     android:layout_height="50dp"
                     android:layout_gravity="center"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="8dp"
                     android:contentDescription="Logo de Nexo"
                     android:src="@drawable/logo_nexo" />
 
@@ -65,60 +65,78 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="2dp"
                     android:alpha="0.8"
                     android:text="Mantén a tu familia segura"
                     android:textColor="#156082"
                     android:textSize="13sp" />
 
-                <!-- Botón de Emergencia GRANDE -->
+                <!-- Botón de Emergencia Rediseñado (Sin cortes de texto) -->
                 <androidx.cardview.widget.CardView
                     android:id="@+id/cardEmergency"
                     android:layout_width="match_parent"
-                    android:layout_height="160dp"
-                    android:layout_marginTop="24dp"
-                    app:cardCornerRadius="20dp"
-                    app:cardElevation="8dp"
-                    android:backgroundTint="#E53935">
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="6dp"
+                    android:backgroundTint="#E53935"
+                    android:foreground="?attr/selectableItemBackground">
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="183dp"
+                        android:layout_height="wrap_content"
                         android:gravity="center"
                         android:orientation="vertical"
                         android:padding="16dp">
 
                         <TextView
-                            android:layout_width="77dp"
-                            android:layout_height="83dp"
-                            android:text="🚨"
-                            android:textSize="48sp" />
-
-                        <Button
-                            android:id="@+id/btnSendAlert"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:background="@android:color/white"
-                            android:padding="12dp"
-                            android:text="EMERGENCIA"
-                            android:textColor="#E53935"
+                            android:text="🚨"
+                            android:textSize="32sp" />
+
+                        <TextView
+                            android:id="@+id/tvEmergencyTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="BOTÓN DE EMERGENCIA"
+                            android:textColor="#FFFFFF"
                             android:textSize="18sp"
                             android:textStyle="bold" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
+                            android:layout_marginTop="2dp"
                             android:alpha="0.9"
-                            android:text="Presiona para alertar a tu familia"
+                            android:text="Presiona para alertar a tu familia inmediatamente"
                             android:textColor="#FFFFFF"
-                            android:textSize="11sp" />
+                            android:textSize="12sp"
+                            android:gravity="center" />
 
                     </LinearLayout>
 
                 </androidx.cardview.widget.CardView>
 
-                <!-- Grid de Opciones - Fila 1 -->
+                <!-- Sección del Mapa en Vivo -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardMapContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:layout_marginTop="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="6dp">
+
+                    <androidx.fragment.app.FragmentContainerView
+                        android:id="@+id/homeMapFragment"
+                        android:name="com.google.android.gms.maps.SupportMapFragment"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                </androidx.cardview.widget.CardView>
+
+                <!-- Grid de Acciones Principales (Rutas, Mis Contactos, Chats) -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -126,82 +144,37 @@
                     android:orientation="horizontal"
                     android:baselineAligned="false">
 
-                    <!-- Mapa -->
+                    <!-- Rutas -->
                     <androidx.cardview.widget.CardView
-                        android:id="@+id/cardMap"
+                        android:id="@+id/cardRoutes"
                         android:layout_width="0dp"
-                        android:layout_height="120dp"
+                        android:layout_height="90dp"
                         android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="6dp"
-                        android:backgroundTint="#FFFFFF">
+                        android:layout_marginEnd="6dp"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="4dp"
+                        android:backgroundTint="#156082"
+                        android:foreground="?attr/selectableItemBackground">
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="12dp">
+                            android:padding="8dp">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="🗺️"
-                                android:textSize="36sp" />
+                                android:text="🛣️"
+                                android:textSize="24sp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="6dp"
-                                android:text="Mapa"
-                                android:textColor="#156082"
-                                android:textSize="14sp"
-                                android:textStyle="bold" />
-
-                        </LinearLayout>
-
-                    </androidx.cardview.widget.CardView>
-
-                    <!-- Programar Viaje -->
-                    <androidx.cardview.widget.CardView
-                        android:id="@+id/cardTrip"
-                        android:layout_width="0dp"
-                        android:layout_height="120dp"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="6dp"
-                        android:backgroundTint="#FFFFFF">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:gravity="center"
-                            android:padding="12dp">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="🗓️"
-                                android:textSize="36sp" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="6dp"
-                                android:text="Programar"
-                                android:textColor="#156082"
-                                android:textSize="13sp"
-                                android:textStyle="bold"
-                                android:gravity="center" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Viaje"
-                                android:textColor="#156082"
+                                android:layout_marginTop="4dp"
+                                android:text="Rutas"
+                                android:textColor="#FFFFFF"
                                 android:textSize="13sp"
                                 android:textStyle="bold" />
 
@@ -209,54 +182,38 @@
 
                     </androidx.cardview.widget.CardView>
 
-                </LinearLayout>
-
-                <!-- Grid de Opciones - Fila 2 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:orientation="horizontal"
-                    android:baselineAligned="false">
-
-                    <!-- Contactos -->
+                    <!-- Mis Contactos -->
                     <androidx.cardview.widget.CardView
                         android:id="@+id/cardContacts"
                         android:layout_width="0dp"
-                        android:layout_height="120dp"
+                        android:layout_height="90dp"
                         android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="6dp"
-                        android:backgroundTint="#FFFFFF">
+                        android:layout_marginStart="3dp"
+                        android:layout_marginEnd="3dp"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="4dp"
+                        android:backgroundTint="#156082"
+                        android:foreground="?attr/selectableItemBackground">
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="12dp">
+                            android:padding="8dp">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="👥"
-                                android:textSize="36sp" />
+                                android:textSize="24sp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="6dp"
-                                android:text="Mis"
-                                android:textColor="#156082"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
                                 android:text="Contactos"
-                                android:textColor="#156082"
+                                android:textColor="#FFFFFF"
                                 android:textSize="13sp"
                                 android:textStyle="bold" />
 
@@ -268,33 +225,34 @@
                     <androidx.cardview.widget.CardView
                         android:id="@+id/cardChats"
                         android:layout_width="0dp"
-                        android:layout_height="120dp"
+                        android:layout_height="90dp"
                         android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="6dp"
-                        android:backgroundTint="#FFFFFF">
+                        android:layout_marginStart="6dp"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="4dp"
+                        android:backgroundTint="#156082"
+                        android:foreground="?attr/selectableItemBackground">
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="12dp">
+                            android:padding="8dp">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="💬"
-                                android:textSize="36sp" />
+                                android:textSize="24sp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="6dp"
+                                android:layout_marginTop="4dp"
                                 android:text="Chats"
-                                android:textColor="#156082"
-                                android:textSize="14sp"
+                                android:textColor="#FFFFFF"
+                                android:textSize="13sp"
                                 android:textStyle="bold" />
 
                         </LinearLayout>
