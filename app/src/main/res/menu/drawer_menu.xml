@@ -3,45 +3,41 @@
 
     <group android:checkableBehavior="single">
 
-
         <item
             android:id="@+id/nav_home"
             android:icon="@drawable/baseline_home_24"
-            android:title="Inicio" />
+            android:title="Principal" />
 
         <item
             android:id="@+id/nav_family_location"
             android:icon="@drawable/baseline_map_24"
-            android:title="Ubicaciones" />
+            android:title="Mapa" />
 
         <item
-            android:id="@+id/nav_schedule_trip"
+            android:id="@+id/nav_chat"
+            android:icon="@drawable/ic_send"
+            android:title="Chat" />
+
+        <item
+            android:id="@+id/nav_routes"
             android:icon="@drawable/outline_directions_walk_24"
-            android:title="Programar Viaje" />
+            android:title="Rutas" />
 
         <item
             android:id="@+id/nav_contacts"
             android:icon="@drawable/ic_person"
-            android:title="Mis Contactos" />
+            android:title="Contactos" />
+
+        <item
+            android:id="@+id/nav_settings"
+            android:icon="@drawable/outline_settings_24"
+            android:title="Configuración" />
 
     </group>
 
-
-            <item
-                android:id="@+id/nav_settings"
-                android:icon="@drawable/outline_settings_24"
-                android:title="Configuración" />
-
-            <item
-                android:id="@+id/nav_help"
-                android:icon="@drawable/ic_password"
-                android:title="Ayuda" />
-
-            <item
-                android:id="@+id/nav_logout"
-                android:icon="@drawable/ic_arrow_forward"
-                android:title="Cerrar Sesión" />
-
-
+    <item
+        android:id="@+id/nav_logout"
+        android:icon="@drawable/ic_arrow_forward"
+        android:title="Cerrar Sesión" />
 
 </menu>

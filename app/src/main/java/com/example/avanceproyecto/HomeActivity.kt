@@ -32,13 +32,20 @@ import com.google.android.gms.location.LocationServices
 import com.example.avanceproyecto.models.Emergency
 import com.google.firebase.Timestamp
 
-class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.LatLng
+
+class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNavigationItemSelectedListener {
 
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var auth: FirebaseAuth
     private lateinit var firestore: FirebaseFirestore
     private lateinit var realtimeDatabase: FirebaseDatabase
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private var mMap: GoogleMap? = null
 
     private var userId: String = ""
     private var userName: String = ""
@@ -64,8 +71,31 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         setupToolbar()
         setupNavigationDrawer()
         setupUI()
+        setupMap()
         createNotificationChannel()
         requestLocationPermission()
+    }
+
+    private fun setupMap() {
+        val mapFragment = supportFragmentManager.findFragmentById(R.id.homeMapFragment) as? SupportMapFragment
+        mapFragment?.getMapAsync(this)
+    }
+
+    override fun onMapReady(googleMap: GoogleMap) {
+        mMap = googleMap
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            mMap?.isMyLocationEnabled = true
+            fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
+                location?.let {
+                    val currentLatLng = LatLng(it.latitude, it.longitude)
+                    mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15f))
+                }
+            }
+        }
     }
 
     private fun setupToolbar() {
@@ -89,6 +119,14 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
 
+        val headerView = navView.getHeaderView(0)
+        val imgProfileHeader = headerView.findViewById<android.widget.ImageView>(R.id.img_profile_header)
+        imgProfileHeader?.setOnClickListener {
+            val intent = Intent(this, PerfilActivity::class.java)
+            intent.putExtra("USER_ID", userId)
+            startActivity(intent)
+            drawerLayout.closeDrawer(GravityCompat.START)
+        }
     }
 
     private fun setupUI() {
@@ -101,18 +139,20 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             showEmergencyConfirmation()
         }
 
-        // Botón de Mapa
-        val cardMap = findViewById<CardView>(R.id.cardMap)
-        cardMap.setOnClickListener {
+        // Mapa desplegado en Home (clic abre vista de mapa completa)
+        val cardMapContainer = findViewById<CardView>(R.id.cardMapContainer)
+        cardMapContainer?.setOnClickListener {
             val intent = Intent(this, MapActivity::class.java)
             intent.putExtra("USER_ID", userId)
             startActivity(intent)
         }
 
-        // Botón de Programar Viaje
-        val cardTrip = findViewById<CardView>(R.id.cardTrip)
-        cardTrip.setOnClickListener {
-            startActivity(Intent(this, TripScheduleActivity::class.java))
+        // Botón de Rutas
+        val cardRoutes = findViewById<CardView>(R.id.cardRoutes)
+        cardRoutes?.setOnClickListener {
+            val intent = Intent(this, RoutesActivity::class.java)
+            intent.putExtra("USER_ID", userId)
+            startActivity(intent)
         }
 
         // Botón de Contactos
@@ -123,10 +163,12 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             startActivity(intent)
         }
 
-        // Botón de Chats (próximamente)
+        // Botón de Chats
         val cardChats = findViewById<CardView>(R.id.cardChats)
         cardChats.setOnClickListener {
-            Toast.makeText(this, "💬 Función de chats próximamente", Toast.LENGTH_SHORT).show()
+            val intent = Intent(this, ChatActivity::class.java)
+            intent.putExtra("USER_ID", userId)
+            startActivity(intent)
         }
     }
 
@@ -299,11 +341,18 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             R.id.nav_home -> {
                 Toast.makeText(this, "Ya estás en Inicio", Toast.LENGTH_SHORT).show()
             }
-            R.id.nav_schedule_trip -> {
-                startActivity(Intent(this, TripScheduleActivity::class.java))
+            R.id.nav_routes -> {
+                val intent = Intent(this, RoutesActivity::class.java)
+                intent.putExtra("USER_ID", userId)
+                startActivity(intent)
             }
             R.id.nav_family_location -> {
                 val intent = Intent(this, MapActivity::class.java)
+                intent.putExtra("USER_ID", userId)
+                startActivity(intent)
+            }
+            R.id.nav_chat -> {
+                val intent = Intent(this, ChatActivity::class.java)
                 intent.putExtra("USER_ID", userId)
                 startActivity(intent)
             }
@@ -313,7 +362,9 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 startActivity(intent)
             }
             R.id.nav_settings -> {
-                Toast.makeText(this, "⚙️ Configuración próximamente", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, ConfiguracionActivity::class.java)
+                intent.putExtra("USER_ID", userId)
+                startActivity(intent)
             }
             R.id.nav_logout -> {
                 showLogoutDialog()
@@ -372,6 +423,9 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             LOCATION_PERMISSION_REQUEST_CODE -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Toast.makeText(this, "✅ Permisos de ubicación concedidos", Toast.LENGTH_SHORT).show()
+                    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                        mMap?.isMyLocationEnabled = true
+                    }
                 }
             }
             100 -> {

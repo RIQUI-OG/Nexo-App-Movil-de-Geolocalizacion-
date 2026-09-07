@@ -80,11 +80,40 @@
         <!-- Contactos / Familia -->
         <activity
             android:name=".ContactsActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.Nexo.NoActionBar" />
+
+        <!-- Rutas -->
+        <activity
+            android:name=".RoutesActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Nexo.NoActionBar" />
+
+        <activity
+            android:name=".CreateRouteActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Nexo.NoActionBar" />
 
         <!-- Perfil -->
         <activity
             android:name=".PerfilActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Nexo.NoActionBar" />
+
+        <!-- Configuración -->
+        <activity
+            android:name=".ConfiguracionActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Nexo.NoActionBar" />
+
+        <activity
+            android:name=".SobreAlertasActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Nexo.NoActionBar" />
+
+        <!-- Chat -->
+        <activity
+            android:name=".ChatActivity"
             android:exported="false" />
 
     </application>

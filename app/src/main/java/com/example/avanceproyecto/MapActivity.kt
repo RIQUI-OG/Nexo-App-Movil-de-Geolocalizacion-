@@ -134,7 +134,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
             R.id.nav_home -> {
                 finish()
             }
-            R.id.nav_schedule_trip -> {
+            R.id.nav_routes -> {
                 startActivity(Intent(this, TripScheduleActivity::class.java))
             }
             R.id.nav_family_location -> {
