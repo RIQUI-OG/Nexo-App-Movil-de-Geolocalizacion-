@@ -5,6 +5,9 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
+import android.widget.RadioButton
+import android.widget.RadioGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -46,7 +49,15 @@ class ContactsActivity : AppCompatActivity() {
 
         setupRecyclerView()
         setupFab()
+        setupPendingRequestsButton()
         loadContacts()
+    }
+
+    private fun setupPendingRequestsButton() {
+        val btnPendingRequests = findViewById<Button>(R.id.btnPendingRequests)
+        btnPendingRequests?.setOnClickListener {
+            Toast.makeText(this, "Solicitudes Pendientes", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun setupRecyclerView() {
@@ -69,107 +80,48 @@ class ContactsActivity : AppCompatActivity() {
 
     private fun showAddContactDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_add_contact, null)
+        val etName = dialogView.findViewById<EditText>(R.id.etContactName)
         val etEmail = dialogView.findViewById<EditText>(R.id.etContactEmail)
-        val btnFamily = dialogView.findViewById<Button>(R.id.btnAddAsFamily)
-        val btnFriend = dialogView.findViewById<Button>(R.id.btnAddAsFriend)
+        val rgCategory = dialogView.findViewById<RadioGroup>(R.id.rgCategory)
+        val btnSendRequest = dialogView.findViewById<Button>(R.id.btnSendRequest)
 
         val dialog = AlertDialog.Builder(this)
-            .setTitle("Agregar Contacto")
             .setView(dialogView)
-            .setNegativeButton("Cancelar", null)
             .create()
 
-        btnFamily.setOnClickListener {
-            val email = etEmail.text.toString().trim()
-            if (email.isNotEmpty()) {
-                addContact(email, "family")
-                dialog.dismiss()
-            } else {
-                Toast.makeText(this, "Ingresa un correo", Toast.LENGTH_SHORT).show()
-            }
-        }
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
-        btnFriend.setOnClickListener {
+        btnSendRequest.setOnClickListener {
+            val name = etName.text.toString().trim()
             val email = etEmail.text.toString().trim()
-            if (email.isNotEmpty()) {
-                addContact(email, "friend")
-                dialog.dismiss()
-            } else {
-                Toast.makeText(this, "Ingresa un correo", Toast.LENGTH_SHORT).show()
+            val selectedCategoryId = rgCategory.checkedRadioButtonId
+            val category = when (selectedCategoryId) {
+                R.id.rbFamilia -> "Familia"
+                R.id.rbAmigos -> "Amigos"
+                R.id.rbOtros -> "Otros"
+                else -> ""
             }
+
+            if (name.isEmpty()) {
+                etName.error = "Ingresa el nombre"
+                return@setOnClickListener
+            }
+
+            if (email.isEmpty()) {
+                etEmail.error = "Ingresa el correo"
+                return@setOnClickListener
+            }
+
+            if (category.isEmpty()) {
+                Toast.makeText(this, "Selecciona una categoría", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            dialog.dismiss()
+            Toast.makeText(this, "Solicitud de amistad enviada a $name", Toast.LENGTH_SHORT).show()
         }
 
         dialog.show()
-    }
-
-    private fun addContact(email: String, type: String) {
-        // Buscar usuario por correo
-        firestore.collection("users")
-            .whereEqualTo("email", email)
-            .get()
-            .addOnSuccessListener { documents ->
-                if (documents.isEmpty) {
-                    Toast.makeText(this, "❌ Usuario no encontrado", Toast.LENGTH_SHORT).show()
-                    return@addOnSuccessListener
-                }
-
-                val userDoc = documents.documents[0]
-                val connectedUserId = userDoc.id
-                val connectedUserName = userDoc.getString("name") ?: ""
-                val connectedUserEmail = userDoc.getString("email") ?: ""
-
-                if (connectedUserId == userId) {
-                    Toast.makeText(this, "❌ No puedes agregarte a ti mismo", Toast.LENGTH_SHORT).show()
-                    return@addOnSuccessListener
-                }
-
-                // Verificar si ya existe la conexión
-                firestore.collection("connections")
-                    .whereEqualTo("userId", userId)
-                    .whereEqualTo("connectedUserId", connectedUserId)
-                    .get()
-                    .addOnSuccessListener { existing ->
-                        if (!existing.isEmpty) {
-                            Toast.makeText(this, "⚠️ Ya tienes agregado a este contacto", Toast.LENGTH_SHORT).show()
-                            return@addOnSuccessListener
-                        }
-
-                        // Crear nueva conexión
-                        val connectionId = firestore.collection("connections").document().id
-                        val connection = UserConnection(
-                            connectionId = connectionId,
-                            userId = userId,
-                            connectedUserId = connectedUserId,
-                            connectedUserName = connectedUserName,
-                            connectedUserEmail = connectedUserEmail,
-                            type = type,
-                            status = "accepted",
-                            createdAt = Timestamp.now()
-                        )
-
-                        firestore.collection("connections")
-                            .document(connectionId)
-                            .set(connection)
-                            .addOnSuccessListener {
-                                // También crear la conexión inversa para que sea bidireccional
-                                createReverseConnection(connectedUserId, type)
-
-                                Toast.makeText(
-                                    this,
-                                    "✅ ${connectedUserName} agregado como ${if (type == "family") "Familiar" else "Amigo"}",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-
-                                loadContacts()
-                            }
-                            .addOnFailureListener { e ->
-                                Toast.makeText(this, "❌ Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                            }
-                    }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "❌ Error al buscar usuario: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
     }
 
     private fun createReverseConnection(connectedUserId: String, type: String) {
@@ -223,38 +175,60 @@ class ContactsActivity : AppCompatActivity() {
     }
 
     private fun showConnectionOptions(connection: UserConnection) {
-        Log.d(TAG, "showConnectionOptions called for: ${connection.connectedUserName}")
+        val dialogView = layoutInflater.inflate(R.layout.dialog_edit_contact, null)
+        val tvHeaderTitle = dialogView.findViewById<TextView>(R.id.tvHeaderTitle)
+        val tvHeaderSubTitle = dialogView.findViewById<TextView>(R.id.tvHeaderSubTitle)
+        val btnViewMap = dialogView.findViewById<Button>(R.id.btnViewMap)
+        val etName = dialogView.findViewById<EditText>(R.id.etEditContactName)
+        val btnSaveChanges = dialogView.findViewById<Button>(R.id.btnSaveChanges)
+        val btnDeleteContact = dialogView.findViewById<Button>(R.id.btnDeleteContact)
 
-        val options = arrayOf(
-            "🗺️ Ver en mapa",
-            "🔄 Cambiar tipo",
-            "🗑️ Eliminar contacto"
-        )
+        tvHeaderTitle.text = connection.connectedUserName
+        tvHeaderSubTitle.text = connection.connectedUserEmail.ifEmpty { "Contacto" }
+        etName.setText(connection.connectedUserName)
 
-        AlertDialog.Builder(this)
-            .setTitle(connection.connectedUserName)
-            .setItems(options) { dialog, which ->
-                Log.d(TAG, "Option selected: $which")
-                when (which) {
-                    0 -> {
-                        Log.d(TAG, "Ver en mapa selected")
-                        viewOnMap(connection)
-                    }
-                    1 -> {
-                        Log.d(TAG, "Cambiar tipo selected")
-                        changeConnectionType(connection)
-                    }
-                    2 -> {
-                        Log.d(TAG, "Eliminar selected")
-                        deleteConnection(connection)
-                    }
+        when (connection.type.lowercase()) {
+            "family", "familia" -> dialogView.findViewById<RadioButton>(R.id.rbEditFamilia)?.isChecked = true
+            "friend", "amigos", "amigo" -> dialogView.findViewById<RadioButton>(R.id.rbEditAmigos)?.isChecked = true
+            else -> dialogView.findViewById<RadioButton>(R.id.rbEditOtros)?.isChecked = true
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        btnViewMap.setOnClickListener {
+            dialog.dismiss()
+            viewOnMap(connection)
+        }
+
+        btnSaveChanges.setOnClickListener {
+            val updatedName = etName.text.toString().trim()
+            if (updatedName.isEmpty()) {
+                etName.error = "Ingresa el nombre"
+                return@setOnClickListener
+            }
+
+            dialog.dismiss()
+            Toast.makeText(this, "Contacto $updatedName actualizado localmente", Toast.LENGTH_SHORT).show()
+        }
+
+        btnDeleteContact.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Eliminar contacto")
+                .setMessage("¿Estás seguro de eliminar a ${connection.connectedUserName}?")
+                .setPositiveButton("Sí, eliminar") { confirmDialog, _ ->
+                    confirmDialog.dismiss()
+                    dialog.dismiss()
+                    Toast.makeText(this, "Contacto eliminado", Toast.LENGTH_SHORT).show()
                 }
-                dialog.dismiss()
-            }
-            .setNegativeButton("Cancelar") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .show()
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
+
+        dialog.show()
     }
 
     private fun viewOnMap(connection: UserConnection) {

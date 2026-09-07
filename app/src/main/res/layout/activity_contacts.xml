@@ -39,6 +39,23 @@
 
         </LinearLayout>
 
+        <!-- Botón de Solicitudes Pendientes -->
+        <Button
+            android:id="@+id/btnPendingRequests"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="8dp"
+            android:text="Solicitudes Pendientes"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:drawableStart="@drawable/ic_email"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:background="@drawable/bg_btn_primary" />
+
         <!-- Lista de contactos -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewContacts"

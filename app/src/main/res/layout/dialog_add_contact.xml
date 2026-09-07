@@ -4,15 +4,49 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="20dp">
+    android:background="@drawable/bg_dialog_rounded"
+    android:padding="24dp">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Ingresa el correo del contacto"
+        android:text="Agregar Contacto"
+        android:textColor="#156082"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="20dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Nombre del contacto:"
         android:textColor="#156082"
         android:textSize="14sp"
-        android:layout_marginBottom="12dp" />
+        android:textStyle="bold"
+        android:layout_marginBottom="6dp" />
+
+    <EditText
+        android:id="@+id/etContactName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Ej. Juan Pérez"
+        android:inputType="textPersonName"
+        android:textColor="#000000"
+        android:textColorHint="#757575"
+        android:textSize="16sp"
+        android:padding="12dp"
+        android:background="@drawable/edittext_background"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Correo electrónico:"
+        android:textColor="#156082"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="6dp" />
 
     <EditText
         android:id="@+id/etContactEmail"
@@ -20,48 +54,65 @@
         android:layout_height="wrap_content"
         android:hint="correo@ejemplo.com"
         android:inputType="textEmailAddress"
-        android:textColor="@color/black"
+        android:textColor="#000000"
+        android:textColorHint="#757575"
+        android:textSize="16sp"
         android:padding="12dp"
         android:background="@drawable/edittext_background"
-        android:layout_marginBottom="20dp" />
+        android:layout_marginBottom="16dp" />
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Selecciona el tipo de contacto:"
+        android:text="Selecciona la categoría:"
         android:textColor="#156082"
         android:textSize="14sp"
         android:textStyle="bold"
-        android:layout_marginBottom="12dp" />
+        android:layout_marginBottom="8dp" />
 
-    <LinearLayout
+    <RadioGroup
+        android:id="@+id/rgCategory"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center">
+        android:gravity="center"
+        android:layout_marginBottom="24dp">
 
-        <Button
-            android:id="@+id/btnAddAsFamily"
+        <RadioButton
+            android:id="@+id/rbFamilia"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="🩷Familiar"
-            android:textColor="#FFFFFF"
-            android:background="@drawable/button_rounded_primary"
-            android:padding="12dp" />
+            android:text="Familia"
+            android:textColor="#333333"
+            android:checked="true" />
 
-        <Button
-            android:id="@+id/btnAddAsFriend"
+        <RadioButton
+            android:id="@+id/rbAmigos"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="👤 Amigo"
-            android:textColor="#FFFFFF"
-            android:background="@drawable/button_rounded_secondary"
-            android:padding="12dp" />
+            android:text="Amigos"
+            android:textColor="#333333" />
 
-    </LinearLayout>
+        <RadioButton
+            android:id="@+id/rbOtros"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Otros"
+            android:textColor="#333333" />
+    </RadioGroup>
+
+    <Button
+        android:id="@+id/btnSendRequest"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Enviar Solicitud"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:padding="12dp"
+        android:background="@drawable/bg_btn_primary" />
 
 </LinearLayout>
