@@ -119,6 +119,14 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
         drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
 
+        val headerView = navView.getHeaderView(0)
+        val imgProfileHeader = headerView.findViewById<android.widget.ImageView>(R.id.img_profile_header)
+        imgProfileHeader?.setOnClickListener {
+            val intent = Intent(this, PerfilActivity::class.java)
+            intent.putExtra("USER_ID", userId)
+            startActivity(intent)
+            drawerLayout.closeDrawer(GravityCompat.START)
+        }
     }
 
     private fun setupUI() {
@@ -142,7 +150,7 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
         // Botón de Rutas
         val cardRoutes = findViewById<CardView>(R.id.cardRoutes)
         cardRoutes?.setOnClickListener {
-            val intent = Intent(this, TripScheduleActivity::class.java)
+            val intent = Intent(this, RoutesActivity::class.java)
             intent.putExtra("USER_ID", userId)
             startActivity(intent)
         }
@@ -334,12 +342,17 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
                 Toast.makeText(this, "Ya estás en Inicio", Toast.LENGTH_SHORT).show()
             }
             R.id.nav_routes -> {
-                val intent = Intent(this, TripScheduleActivity::class.java)
+                val intent = Intent(this, RoutesActivity::class.java)
                 intent.putExtra("USER_ID", userId)
                 startActivity(intent)
             }
             R.id.nav_family_location -> {
                 val intent = Intent(this, MapActivity::class.java)
+                intent.putExtra("USER_ID", userId)
+                startActivity(intent)
+            }
+            R.id.nav_chat -> {
+                val intent = Intent(this, ChatActivity::class.java)
                 intent.putExtra("USER_ID", userId)
                 startActivity(intent)
             }
@@ -349,7 +362,9 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
                 startActivity(intent)
             }
             R.id.nav_settings -> {
-                Toast.makeText(this, "⚙️ Configuración próximamente", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, ConfiguracionActivity::class.java)
+                intent.putExtra("USER_ID", userId)
+                startActivity(intent)
             }
             R.id.nav_logout -> {
                 showLogoutDialog()

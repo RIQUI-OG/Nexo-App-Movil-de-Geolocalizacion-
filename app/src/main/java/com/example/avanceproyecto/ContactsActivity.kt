@@ -17,11 +17,18 @@ import com.example.avanceproyecto.adapters.ContactsAdapter
 import com.example.avanceproyecto.models.UserConnection
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import android.view.MenuItem
+import android.widget.ImageView
+import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
+import com.google.android.material.navigation.NavigationView
 import com.google.firebase.Timestamp
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
-class ContactsActivity : AppCompatActivity() {
+class ContactsActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
+    private lateinit var drawerLayout: DrawerLayout
     private lateinit var firestore: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
     private lateinit var recyclerView: RecyclerView
@@ -35,22 +42,92 @@ class ContactsActivity : AppCompatActivity() {
         private const val TAG = "ContactsActivity"
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_contacts)
-
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = "Mis Contactos"
 
         auth = FirebaseAuth.getInstance()
         firestore = FirebaseFirestore.getInstance()
         userId = intent.getStringExtra("USER_ID") ?: auth.currentUser?.uid ?: ""
 
+        setupNavigationDrawer()
         setupRecyclerView()
         setupFab()
         setupPendingRequestsButton()
         loadContacts()
+    }
+
+    private fun setupNavigationDrawer() {
+        drawerLayout = findViewById(R.id.drawer_layout)
+        val navView: NavigationView = findViewById(R.id.nav_view)
+        val toolbar: androidx.appcompat.widget.Toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.title = "Mis Contactos"
+
+        navView.setNavigationItemSelectedListener(this)
+
+        val toggle = ActionBarDrawerToggle(
+            this,
+            drawerLayout,
+            toolbar,
+            R.string.navigation_drawer_open,
+            R.string.navigation_drawer_close
+        )
+        drawerLayout.addDrawerListener(toggle)
+        toggle.syncState()
+
+        val headerView = navView.getHeaderView(0)
+        val imgProfileHeader = headerView.findViewById<ImageView>(R.id.img_profile_header)
+        imgProfileHeader?.setOnClickListener {
+            val intent = Intent(this, PerfilActivity::class.java)
+            intent.putExtra("USER_ID", userId)
+            startActivity(intent)
+            drawerLayout.closeDrawer(GravityCompat.START)
+        }
+    }
+
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.nav_home -> {
+                val intent = Intent(this, HomeActivity::class.java)
+                intent.putExtra("USER_ID", userId)
+                startActivity(intent)
+                finish()
+            }
+            R.id.nav_family_location -> {
+                val intent = Intent(this, MapActivity::class.java)
+                intent.putExtra("USER_ID", userId)
+                startActivity(intent)
+            }
+            R.id.nav_routes -> {
+                val intent = Intent(this, RoutesActivity::class.java)
+                intent.putExtra("USER_ID", userId)
+                startActivity(intent)
+            }
+            R.id.nav_chat -> {
+                val intent = Intent(this, ChatActivity::class.java)
+                intent.putExtra("USER_ID", userId)
+                startActivity(intent)
+            }
+            R.id.nav_contacts -> {
+                Toast.makeText(this, "Ya estás en Contactos", Toast.LENGTH_SHORT).show()
+            }
+            R.id.nav_settings -> {
+                val intent = Intent(this, ConfiguracionActivity::class.java)
+                intent.putExtra("USER_ID", userId)
+                startActivity(intent)
+            }
+            R.id.nav_logout -> {
+                auth.signOut()
+                val intent = Intent(this, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                startActivity(intent)
+                finish()
+            }
+        }
+        drawerLayout.closeDrawer(GravityCompat.START)
+        return true
     }
 
     private fun setupPendingRequestsButton() {

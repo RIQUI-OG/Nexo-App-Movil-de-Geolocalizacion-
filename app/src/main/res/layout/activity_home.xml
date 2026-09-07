@@ -274,9 +274,9 @@
         android:layout_gravity="start"
         android:fitsSystemWindows="true"
         app:headerLayout="@layout/nav_header_main"
-        android:background="#FFFFFF"
+        android:background="#156082"
         app:menu="@menu/drawer_menu"
-        app:itemTextColor="#156082"
-        app:itemIconTint="#156082"/>
+        app:itemTextColor="#FFFFFF"
+        app:itemIconTint="#FFFFFF"/>
 
 </androidx.drawerlayout.widget.DrawerLayout>

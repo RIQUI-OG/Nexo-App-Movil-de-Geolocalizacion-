@@ -1,10 +1,236 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@drawable/background_gradient"
     tools:context=".PerfilActivity">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- Encabezado con Ícono de Menú y Título Centrado -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp">
+
+            <ImageButton
+                android:id="@+id/btnMenuBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_menu"
+                app:tint="#FFFFFF"
+                android:contentDescription="Menú" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="Perfil"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+        </RelativeLayout>
+
+        <!-- Foto de Perfil con botón de edición superpuesto -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/imgProfile"
+                android:layout_width="110dp"
+                android:layout_height="110dp"
+                android:src="@drawable/ic_person"
+                android:scaleType="centerCrop"
+                android:padding="8dp"
+                android:background="#156082"
+                app:shapeAppearanceOverlay="@style/CircleImageStyle"
+                app:strokeColor="#FFFFFF"
+                app:strokeWidth="3dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/btnEditPhoto"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_edit"
+                android:padding="8dp"
+                android:background="#00BFA6"
+                app:tint="#FFFFFF"
+                app:shapeAppearanceOverlay="@style/CircleImageStyle"
+                app:strokeColor="#FFFFFF"
+                app:strokeWidth="2dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:layout_constraintBottom_toBottomOf="@id/imgProfile"
+                app:layout_constraintEnd_toEndOf="@id/imgProfile" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- Tarjeta contenedora de datos -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="6dp"
+            android:backgroundTint="#FFFFFF"
+            android:layout_marginBottom="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <!-- Nombre completo -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilProfileName"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Nombre completo"
+                    android:textColorHint="#757575"
+                    app:boxStrokeColor="#156082"
+                    app:hintTextColor="#156082"
+                    android:layout_marginBottom="16dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etProfileName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Juan Pérez"
+                        android:enabled="false"
+                        android:inputType="textPersonName"
+                        android:textColor="#000000"
+                        android:textSize="16sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Correo electrónico -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilProfileEmail"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Correo electrónico"
+                    android:textColorHint="#757575"
+                    app:boxStrokeColor="#156082"
+                    app:hintTextColor="#156082"
+                    android:layout_marginBottom="16dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etProfileEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="juan.perez@ejemplo.com"
+                        android:enabled="false"
+                        android:inputType="textEmailAddress"
+                        android:textColor="#000000"
+                        android:textSize="16sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Teléfono -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilProfilePhone"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Teléfono"
+                    android:textColorHint="#757575"
+                    app:boxStrokeColor="#156082"
+                    app:hintTextColor="#156082"
+                    android:layout_marginBottom="20dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etProfilePhone"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="555-123-4567"
+                        android:enabled="false"
+                        android:inputType="phone"
+                        android:textColor="#000000"
+                        android:textSize="16sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Botón de Editar / Guardar -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEditProfile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Editar"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:padding="12dp"
+                    app:icon="@drawable/ic_edit"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp"
+                    app:iconTint="#FFFFFF"
+                    app:backgroundTint="#00BFA6"
+                    app:cornerRadius="12dp"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Botón de Eliminar cuenta -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDeleteAccount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Eliminar cuenta"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:padding="12dp"
+                    app:backgroundTint="#E53935"
+                    app:cornerRadius="12dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Enlaces Inferiores -->
+        <TextView
+            android:id="@+id/tvLogout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Cerrar sesión"
+            android:textColor="#156082"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tvContactAdmin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Contactar con el administrador"
+            android:textColor="#156082"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_marginBottom="16dp" />
+
+    </LinearLayout>
+
+</ScrollView>
