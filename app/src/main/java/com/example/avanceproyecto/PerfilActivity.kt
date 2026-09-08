@@ -11,6 +11,11 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.textfield.TextInputEditText
 
+import android.app.ProgressDialog
+import com.example.avanceproyecto.models.User
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+
 class PerfilActivity : AppCompatActivity() {
 
     private lateinit var btnMenuBack: ImageButton
@@ -23,14 +28,27 @@ class PerfilActivity : AppCompatActivity() {
     private lateinit var tvLogout: TextView
     private lateinit var tvContactAdmin: TextView
 
+    private lateinit var auth: FirebaseAuth
+    private lateinit var firestore: FirebaseFirestore
+    private lateinit var progressDialog: ProgressDialog
+
     private var isEditing = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_perfil)
 
+        auth = FirebaseAuth.getInstance()
+        firestore = FirebaseFirestore.getInstance()
+
+        progressDialog = ProgressDialog(this).apply {
+            setMessage("Cargando perfil...")
+            setCancelable(false)
+        }
+
         initViews()
         setupListeners()
+        loadUserData()
     }
 
     private fun initViews() {
@@ -66,7 +84,7 @@ class PerfilActivity : AppCompatActivity() {
                 etProfilePhone.isEnabled = true
                 btnEditProfile.text = "Guardar"
             } else {
-                // Guardar Cambios
+                // Guardar Cambios en Firebase
                 val name = etProfileName.text.toString().trim()
                 val email = etProfileEmail.text.toString().trim()
                 val phone = etProfilePhone.text.toString().trim()
@@ -76,13 +94,7 @@ class PerfilActivity : AppCompatActivity() {
                     return@setOnClickListener
                 }
 
-                isEditing = false
-                etProfileName.isEnabled = false
-                etProfileEmail.isEnabled = false
-                etProfilePhone.isEnabled = false
-                btnEditProfile.text = "Editar"
-
-                Toast.makeText(this, "Datos actualizados localmente", Toast.LENGTH_SHORT).show()
+                updateProfileData(name, email, phone)
             }
         }
 
@@ -92,12 +104,7 @@ class PerfilActivity : AppCompatActivity() {
                 .setTitle("⚠️ Eliminar Cuenta")
                 .setMessage("¿Estás seguro de eliminar tu cuenta? Esta acción no se puede deshacer.")
                 .setPositiveButton("Sí, eliminar") { _, _ ->
-                    Toast.makeText(this, "Cuenta eliminada", Toast.LENGTH_SHORT).show()
-                    val intent = Intent(this, LoginActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    }
-                    startActivity(intent)
-                    finish()
+                    deleteUserAccount()
                 }
                 .setNegativeButton("Cancelar", null)
                 .show()
@@ -105,6 +112,7 @@ class PerfilActivity : AppCompatActivity() {
 
         // Enlace Cerrar sesión
         tvLogout.setOnClickListener {
+            auth.signOut()
             Toast.makeText(this, "Sesión cerrada", Toast.LENGTH_SHORT).show()
             val intent = Intent(this, LoginActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -117,5 +125,98 @@ class PerfilActivity : AppCompatActivity() {
         tvContactAdmin.setOnClickListener {
             Toast.makeText(this, "Abriendo cliente de correo...", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun loadUserData() {
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            Toast.makeText(this, "No se encontró sesión activa", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        progressDialog.show()
+
+        firestore.collection("users")
+            .document(currentUser.uid)
+            .get()
+            .addOnSuccessListener { document ->
+                progressDialog.dismiss()
+                if (document != null && document.exists()) {
+                    val user = document.toObject(User::class.java)
+                    etProfileName.setText(user?.name ?: currentUser.displayName ?: "")
+                    etProfileEmail.setText(user?.email ?: currentUser.email ?: "")
+                    etProfilePhone.setText(user?.phone ?: "")
+                } else {
+                    etProfileEmail.setText(currentUser.email ?: "")
+                    etProfileName.setText(currentUser.displayName ?: "")
+                    Toast.makeText(this, "No se encontraron datos adicionales del usuario", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .addOnFailureListener { e ->
+                progressDialog.dismiss()
+                Toast.makeText(this, "Error al cargar datos: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+    }
+
+    private fun updateProfileData(name: String, email: String, phone: String) {
+        val currentUser = auth.currentUser ?: return
+
+        progressDialog.setMessage("Actualizando perfil...")
+        progressDialog.show()
+
+        val updates = mapOf(
+            "name" to name,
+            "email" to email,
+            "phone" to phone
+        )
+
+        firestore.collection("users")
+            .document(currentUser.uid)
+            .update(updates)
+            .addOnSuccessListener {
+                progressDialog.dismiss()
+                isEditing = false
+                etProfileName.isEnabled = false
+                etProfileEmail.isEnabled = false
+                etProfilePhone.isEnabled = false
+                btnEditProfile.text = "Editar"
+                Toast.makeText(this, "Datos actualizados correctamente", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                progressDialog.dismiss()
+                Toast.makeText(this, "Error al actualizar perfil: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+    }
+
+    private fun deleteUserAccount() {
+        val currentUser = auth.currentUser ?: return
+
+        progressDialog.setMessage("Eliminando cuenta...")
+        progressDialog.show()
+
+        firestore.collection("users")
+            .document(currentUser.uid)
+            .delete()
+            .addOnSuccessListener {
+                currentUser.delete()
+                    .addOnSuccessListener {
+                        progressDialog.dismiss()
+                        Toast.makeText(this, "Cuenta eliminada con éxito", Toast.LENGTH_SHORT).show()
+                        val intent = Intent(this, LoginActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        }
+                        startActivity(intent)
+                        finish()
+                    }
+                    .addOnFailureListener { e ->
+                        progressDialog.dismiss()
+                        Toast.makeText(this, "Error al eliminar usuario en Auth: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+            }
+            .addOnFailureListener { e ->
+                progressDialog.dismiss()
+                Toast.makeText(this, "Error al eliminar datos de Firestore: ${e.message}", Toast.LENGTH_LONG).show()
+            }
     }
 }

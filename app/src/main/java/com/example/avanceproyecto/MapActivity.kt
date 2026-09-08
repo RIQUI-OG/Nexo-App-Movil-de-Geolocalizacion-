@@ -134,9 +134,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
             R.id.nav_home -> {
                 finish()
             }
-            R.id.nav_routes -> {
-                startActivity(Intent(this, TripScheduleActivity::class.java))
-            }
+
             R.id.nav_family_location -> {
                 Toast.makeText(this, "Ya estás en ubicaciones", Toast.LENGTH_SHORT).show()
             }
