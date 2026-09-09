@@ -72,10 +72,6 @@
             android:name=".MapActivity"
             android:exported="false" />
 
-        <!--  Rutas seguras / viajes -->
-        <activity
-            android:name=".TripScheduleActivity"
-            android:exported="false" />
 
         <!-- Contactos / Familia -->
         <activity
