@@ -42,11 +42,11 @@ object NotificationHelper {
                 enableVibration(true)
             }
 
-            // Canal para el Servicio en Segundo Plano
+            // Canal para el Servicio en Segundo Plano (Visibilidad Fija)
             val serviceChannel = NotificationChannel(
                 CHANNEL_SERVICE_ID,
                 "Servicio de Ubicación Continuo",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = "Notificación permanente de seguimiento seguro de ubicación"
             }

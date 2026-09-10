@@ -13,7 +13,6 @@ import androidx.core.app.NotificationCompat
 import com.example.avanceproyecto.HomeActivity
 import com.example.avanceproyecto.R
 import com.example.avanceproyecto.models.ActiveTrip
-import com.example.avanceproyecto.models.ChatMessage
 import com.example.avanceproyecto.models.RouteAlert
 import com.example.avanceproyecto.utils.NotificationHelper
 import com.example.avanceproyecto.utils.RouteTrackingHelper
@@ -37,7 +36,6 @@ class LocationForegroundService : Service() {
 
     private var userId: String = ""
     private var currentActiveTrip: ActiveTrip? = null
-    private val processedMessages = mutableSetOf<String>()
     private val processedAlerts = mutableSetOf<String>()
 
     companion object {
@@ -64,7 +62,12 @@ class LocationForegroundService : Service() {
             userId = auth.currentUser?.uid ?: ""
         }
 
-        startForeground(SERVICE_NOTIFICATION_ID, createPermanentNotification())
+        try {
+            startForeground(SERVICE_NOTIFICATION_ID, createPermanentNotification())
+        } catch (e: Exception) {
+            Log.e(TAG, "Error iniciando startForeground", e)
+        }
+
         startLocationTracking()
         listenToMyActiveTrip()
         listenToIncomingMessagesAndAlerts()
@@ -92,7 +95,8 @@ class LocationForegroundService : Service() {
                 NotificationCompat.BigTextStyle()
                     .bigText("Nexo está funcionando en segundo plano para mantener informados a tus contactos de tu ubicación.")
             )
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
             .build()
@@ -209,7 +213,6 @@ class LocationForegroundService : Service() {
     private fun listenToIncomingMessagesAndAlerts() {
         if (userId.isEmpty()) return
 
-        // Escuchar alertas entrantes
         try {
             realtimeDatabase.getReference("route_alerts/$userId")
                 .addValueEventListener(object : ValueEventListener {
