@@ -1,42 +1,43 @@
 package com.example.avanceproyecto
 
-import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.snackbar.Snackbar
-import androidx.appcompat.widget.Toolbar
-import androidx.drawerlayout.widget.DrawerLayout
-import androidx.appcompat.app.ActionBarDrawerToggle
-import com.google.android.material.navigation.NavigationView
-import android.view.MenuItem
-import android.content.DialogInterface
-import android.content.Intent
-import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
-import android.widget.TextView
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.DialogInterface
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Build
+import android.os.Bundle
+import android.view.MenuItem
+import android.view.View
+import android.widget.ImageView
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.GravityCompat
-import androidx.cardview.widget.CardView
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.database.FirebaseDatabase
-import android.Manifest
-import android.location.Location
+import androidx.drawerlayout.widget.DrawerLayout
+import com.example.avanceproyecto.models.Emergency
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import com.example.avanceproyecto.models.Emergency
-import com.google.firebase.Timestamp
-
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.material.navigation.NavigationView
+import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FirebaseFirestore
 
 class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNavigationItemSelectedListener {
 
@@ -48,7 +49,7 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
     private var mMap: GoogleMap? = null
 
     private var userId: String = ""
-    private var userName: String = ""
+    private var userName: String = "Usuario"
 
     private val CHANNEL_ID = "nexo_alerts_channel"
     private val NOTIFICATION_ID = 1
@@ -58,13 +59,11 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
-        // Inicializar Firebase
         auth = FirebaseAuth.getInstance()
         firestore = FirebaseFirestore.getInstance()
         realtimeDatabase = FirebaseDatabase.getInstance()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        // Obtener datos del usuario
         userId = intent.getStringExtra("USER_ID") ?: auth.currentUser?.uid ?: ""
         userName = intent.getStringExtra("USER_NAME") ?: "Usuario"
 
@@ -72,8 +71,40 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
         setupNavigationDrawer()
         setupUI()
         setupMap()
+        loadUserData()
         createNotificationChannel()
         requestLocationPermission()
+    }
+
+    private fun loadUserData() {
+        val currentUid = if (userId.isNotEmpty()) userId else auth.currentUser?.uid ?: ""
+        if (currentUid.isEmpty()) return
+
+        firestore.collection("users").document(currentUid).get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    val name = doc.getString("name") ?: ""
+                    if (name.isNotEmpty()) {
+                        userName = name
+                        updateWelcomeUI()
+                    }
+                }
+            }
+    }
+
+    private fun updateWelcomeUI() {
+        val tvWelcomeTitle = findViewById<TextView>(R.id.tvWelcomeTitle)
+        tvWelcomeTitle?.text = "¡BIENVENIDO(A), ${userName.uppercase()}!"
+
+        val navView = findViewById<NavigationView>(R.id.nav_view)
+        val headerView = navView?.getHeaderView(0)
+        val tvProfileHeader = headerView?.findViewById<TextView>(R.id.tv_profile_header)
+        tvProfileHeader?.text = userName
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadUserData()
     }
 
     private fun setupMap() {
@@ -120,26 +151,28 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
         toggle.syncState()
 
         val headerView = navView.getHeaderView(0)
-        val imgProfileHeader = headerView.findViewById<android.widget.ImageView>(R.id.img_profile_header)
-        imgProfileHeader?.setOnClickListener {
+        val imgProfileHeader = headerView.findViewById<ImageView>(R.id.img_profile_header)
+        val tvProfileHeader = headerView.findViewById<TextView>(R.id.tv_profile_header)
+
+        val openProfileListener = View.OnClickListener {
             val intent = Intent(this, PerfilActivity::class.java)
             intent.putExtra("USER_ID", userId)
             startActivity(intent)
             drawerLayout.closeDrawer(GravityCompat.START)
         }
+
+        imgProfileHeader?.setOnClickListener(openProfileListener)
+        tvProfileHeader?.setOnClickListener(openProfileListener)
     }
 
     private fun setupUI() {
-        val tvWelcomeTitle = findViewById<TextView>(R.id.tvWelcomeTitle)
-        tvWelcomeTitle.text = "¡BIENVENIDO(A), $userName!"
+        updateWelcomeUI()
 
-        // Botón de Emergencia - Click en toda la tarjeta
         val cardEmergency = findViewById<CardView>(R.id.cardEmergency)
         cardEmergency.setOnClickListener {
             showEmergencyConfirmation()
         }
 
-        // Mapa desplegado en Home (clic abre vista de mapa completa)
         val cardMapContainer = findViewById<CardView>(R.id.cardMapContainer)
         cardMapContainer?.setOnClickListener {
             val intent = Intent(this, MapActivity::class.java)
@@ -147,7 +180,6 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
             startActivity(intent)
         }
 
-        // Botón de Rutas
         val cardRoutes = findViewById<CardView>(R.id.cardRoutes)
         cardRoutes?.setOnClickListener {
             val intent = Intent(this, RoutesActivity::class.java)
@@ -155,7 +187,6 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
             startActivity(intent)
         }
 
-        // Botón de Contactos
         val cardContacts = findViewById<CardView>(R.id.cardContacts)
         cardContacts.setOnClickListener {
             val intent = Intent(this, ContactsActivity::class.java)
@@ -163,7 +194,6 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
             startActivity(intent)
         }
 
-        // Botón de Chats
         val cardChats = findViewById<CardView>(R.id.cardChats)
         cardChats?.setOnClickListener {
             val intent = Intent(this, ChatListActivity::class.java)
@@ -226,7 +256,6 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
                 Toast.makeText(this, "❌ Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
 
-        // También actualizar ubicación en Realtime Database con estado de emergencia
         val locationData = mapOf(
             "latitude" to latitude,
             "longitude" to longitude,
@@ -239,7 +268,6 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
     }
 
     private fun sendNotificationToFamily(latitude: Double, longitude: Double) {
-        // Obtener contactos familiares
         firestore.collection("connections")
             .whereEqualTo("userId", userId)
             .whereEqualTo("type", "family")
@@ -249,7 +277,6 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
                 for (document in documents) {
                     val connectedUserId = document.getString("connectedUserId") ?: continue
 
-                    // Guardar notificación en Firestore
                     val notificationData = mapOf(
                         "fromUserId" to userId,
                         "fromUserName" to userName,
