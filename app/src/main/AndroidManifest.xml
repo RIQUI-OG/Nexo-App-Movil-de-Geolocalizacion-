@@ -34,7 +34,7 @@
         <!-- 🗺Google Maps API KEY -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyBghcG6pr49IRRgmVD7WST2mEyhxLIuMuU" />
+            android:value="AIzaSyA-3F1SseW3AbiDkWykE_bmPyEcBRsmNVM" />
 
         <!-- Requerido por Google Play Services -->
         <meta-data
@@ -70,7 +70,8 @@
         <!-- 🗺Mapa -->
         <activity
             android:name=".MapActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.Nexo.NoActionBar" />
 
         <!--  Rutas seguras / viajes -->
         <activity
@@ -112,6 +113,11 @@
             android:theme="@style/Theme.Nexo.NoActionBar" />
 
         <!-- Chat -->
+        <activity
+            android:name=".ChatListActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Nexo.NoActionBar" />
+
         <activity
             android:name=".ChatActivity"
             android:exported="false" />

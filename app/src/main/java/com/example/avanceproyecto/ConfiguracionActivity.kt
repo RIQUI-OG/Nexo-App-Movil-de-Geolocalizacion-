@@ -124,7 +124,7 @@ class ConfiguracionActivity : AppCompatActivity(), NavigationView.OnNavigationIt
                 startActivity(intent)
             }
             R.id.nav_chat -> {
-                val intent = Intent(this, ChatActivity::class.java)
+                val intent = Intent(this, ChatListActivity::class.java)
                 intent.putExtra("USER_ID", userId)
                 startActivity(intent)
             }

@@ -1,7 +1,7 @@
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("com.google.gms.google-services")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -65,6 +65,7 @@ dependencies {
     // Google Maps & Location
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.1.0")
+    implementation("com.google.maps.android:android-maps-utils:3.8.0")
 
     // RecyclerView (familiares, chats)
     implementation("androidx.recyclerview:recyclerview:1.3.2")

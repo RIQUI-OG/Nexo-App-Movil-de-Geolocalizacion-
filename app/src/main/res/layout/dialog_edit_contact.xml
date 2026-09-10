@@ -7,7 +7,7 @@
     android:background="@drawable/bg_dialog_rounded"
     android:padding="24dp">
 
-    <!-- Encabezado con Icono, Nombre y Opción de Mapa -->
+    <!-- Encabezado con Icono, Nombre y Opciones de Mapa y Chat -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -48,6 +48,21 @@
                 android:textColor="#757575"
                 android:textSize="13sp" />
         </LinearLayout>
+
+        <Button
+            android:id="@+id/btnStartChat"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="Chat"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:drawableStart="@drawable/ic_send"
+            android:drawableTint="#FFFFFF"
+            android:background="@drawable/button_rounded_primary"
+            android:paddingStart="8dp"
+            android:paddingEnd="10dp"
+            android:layout_marginEnd="6dp" />
 
         <Button
             android:id="@+id/btnViewMap"

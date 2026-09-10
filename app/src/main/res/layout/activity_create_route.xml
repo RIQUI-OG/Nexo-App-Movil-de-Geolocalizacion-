@@ -21,130 +21,259 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Crear Ruta"
+        android:text="Crear Ruta - Google Maps"
         android:textColor="#FFFFFF"
-        android:textSize="28sp"
+        android:textSize="22sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="6dp" />
 
-    <!-- Formulario -->
+    <!-- Formulario Principal -->
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="12dp"
         app:cardCornerRadius="16dp"
         app:cardElevation="6dp"
         android:backgroundTint="#FFFFFF">
 
-        <LinearLayout
+        <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:fillViewport="true">
 
-            <!-- Nombre de la ruta -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilRouteName"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Nombre de la ruta"
-                android:textColorHint="#757575"
-                app:boxStrokeColor="#156082"
-                app:hintTextColor="#156082"
-                android:layout_marginBottom="12dp">
+                android:orientation="vertical"
+                android:padding="14dp">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etRouteName"
+                <!-- Nombre de la ruta -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilRouteName"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="text"
-                    android:textColor="#000000"
-                    android:textSize="15sp" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:hint="Nombre de la ruta (Ej: Trabajo - Casa)"
+                    android:textColorHint="#757575"
+                    app:boxStrokeColor="#156082"
+                    app:hintTextColor="#156082"
+                    android:layout_marginBottom="8dp">
 
-            <!-- Partida -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilStartLocation"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Partida"
-                android:textColorHint="#757575"
-                app:boxStrokeColor="#156082"
-                app:hintTextColor="#156082"
-                app:endIconMode="custom"
-                app:endIconDrawable="@drawable/ic_search"
-                app:endIconTint="#156082"
-                android:layout_marginBottom="12dp">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etRouteName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:textColor="#000000"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etStartLocation"
+                <!-- Barra Superior de Medios de Transporte (Estilo Google Maps) -->
+                <HorizontalScrollView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="text"
-                    android:textColor="#000000"
-                    android:textSize="15sp" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:scrollbars="none"
+                    android:layout_marginBottom="10dp">
 
-            <!-- Destino -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilEndLocation"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Destino"
-                android:textColorHint="#757575"
-                app:boxStrokeColor="#156082"
-                app:hintTextColor="#156082"
-                app:endIconMode="custom"
-                app:endIconDrawable="@drawable/ic_search"
-                app:endIconTint="#156082"
-                android:layout_marginBottom="16dp">
+                    <RadioGroup
+                        android:id="@+id/rgTransportMode"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etEndLocation"
+                        <RadioButton
+                            android:id="@+id/rbTransit"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🚌 Transporte"
+                            android:checked="true"
+                            android:textColor="#333333"
+                            android:layout_marginEnd="6dp" />
+
+                        <RadioButton
+                            android:id="@+id/rbDriving"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🚗 Auto"
+                            android:textColor="#333333"
+                            android:layout_marginEnd="6dp" />
+
+                        <RadioButton
+                            android:id="@+id/rbWalking"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🚶 Caminando"
+                            android:textColor="#333333"
+                            android:layout_marginEnd="6dp" />
+
+                        <RadioButton
+                            android:id="@+id/rbBicycling"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🚴 Bicicleta"
+                            android:textColor="#333333" />
+
+                    </RadioGroup>
+
+                </HorizontalScrollView>
+
+                <!-- Botón rápido para usar ubicación actual -->
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipUseCurrentLocation"
+                    style="@style/Widget.MaterialComponents.Chip.Action"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📍 Usar mi ubicación actual como partida"
+                    android:textColor="#156082"
+                    app:chipIcon="@android:drawable/ic_menu_mylocation"
+                    app:chipIconTint="#156082"
+                    app:chipBackgroundColor="#E1F5FE"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- Contenedor de Origen y Destino con botón Swap ⇅ -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="text"
-                    android:textColor="#000000"
-                    android:textSize="15sp" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="10dp">
 
-            <!-- Fragmento de Mapa -->
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                app:cardCornerRadius="12dp"
-                android:layout_marginBottom="16dp">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
-                <androidx.fragment.app.FragmentContainerView
-                    android:id="@+id/createRouteMapFragment"
-                    android:name="com.google.android.gms.maps.SupportMapFragment"
+                        <!-- Partida / Origen -->
+                        <AutoCompleteTextView
+                            android:id="@+id/etOrigin"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="🔘 Partida (Dirección o nombre)"
+                            android:inputType="text"
+                            android:textColor="#000000"
+                            android:textSize="14sp"
+                            android:padding="12dp"
+                            android:background="@drawable/edittext_background"
+                            android:completionThreshold="3"
+                            android:layout_marginBottom="6dp" />
+
+                        <!-- Destino -->
+                        <AutoCompleteTextView
+                            android:id="@+id/etDestination"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="📍 Destino (Dirección o nombre)"
+                            android:inputType="text"
+                            android:textColor="#000000"
+                            android:textSize="14sp"
+                            android:padding="12dp"
+                            android:background="@drawable/edittext_background"
+                            android:completionThreshold="3" />
+
+                    </LinearLayout>
+
+                    <!-- Botón Swap ⇅ -->
+                    <ImageView
+                        android:id="@+id/btnSwapLocations"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:layout_marginStart="8dp"
+                        android:src="@android:drawable/ic_popup_sync"
+                        app:tint="#156082"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:padding="6dp"
+                        android:contentDescription="Intercambiar Origen y Destino" />
+
+                </LinearLayout>
+
+                <!-- Botón de Buscar Rutas -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCalculateRoute"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
+                    android:layout_height="wrap_content"
+                    android:text="🔍 Buscar Opciones de Ruta con Google Maps"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="#00BFA6"
+                    app:cornerRadius="10dp"
+                    android:layout_marginBottom="8dp" />
 
-            </androidx.cardview.widget.CardView>
+                <!-- Información de Estado de Búsqueda -->
+                <TextView
+                    android:id="@+id/tvRouteInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="👉 Escribe origen y destino (o toca el mapa) para ver todas las formas de llegar"
+                    android:textColor="#156082"
+                    android:textSize="13sp"
+                    android:gravity="center"
+                    android:layout_marginBottom="8dp" />
 
-            <!-- Botón Guardar Ruta -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSaveRoute"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Guardar Ruta"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:padding="12dp"
-                app:backgroundTint="#156082"
-                app:cornerRadius="12dp" />
+                <!-- Lista Vertical de Opciones de Ruta (Estilo Google Maps) -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvRouteOptions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:layout_marginBottom="10dp" />
 
-        </LinearLayout>
+                <!-- Fragmento de Mapa de Google -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp"
+                    app:cardCornerRadius="12dp"
+                    android:layout_marginBottom="10dp">
+
+                    <androidx.fragment.app.FragmentContainerView
+                        android:id="@+id/createRouteMapFragment"
+                        android:name="com.google.android.gms.maps.SupportMapFragment"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                </androidx.cardview.widget.CardView>
+
+                <!-- Botones de Acción -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnClearPoints"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🔄 Limpiar"
+                        android:textColor="#D32F2F"
+                        app:strokeColor="#D32F2F"
+                        android:layout_marginEnd="6dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSaveRoute"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="2"
+                        android:text="💾 Guardar Ruta"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        app:backgroundTint="#156082"
+                        app:cornerRadius="10dp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </ScrollView>
 
     </androidx.cardview.widget.CardView>
 

@@ -1,12 +1,5 @@
-buildscript {
-    dependencies {
-        classpath("com.google.gms:google-services:4.4.0")
-    }
-}
-
 plugins {
-    // Plugins base (no se aplican aquí directamente)
-    id("com.android.application") version "8.13.2" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.0" apply false
-    id("com.google.gms.google-services") version "4.4.0" apply false
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.kotlin.android) apply false
+    alias(libs.plugins.google.gms.google.services) apply false
 }

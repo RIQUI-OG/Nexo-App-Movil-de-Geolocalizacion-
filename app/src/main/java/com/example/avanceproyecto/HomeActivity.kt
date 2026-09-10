@@ -165,8 +165,8 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
 
         // Botón de Chats
         val cardChats = findViewById<CardView>(R.id.cardChats)
-        cardChats.setOnClickListener {
-            val intent = Intent(this, ChatActivity::class.java)
+        cardChats?.setOnClickListener {
+            val intent = Intent(this, ChatListActivity::class.java)
             intent.putExtra("USER_ID", userId)
             startActivity(intent)
         }
@@ -352,7 +352,7 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
                 startActivity(intent)
             }
             R.id.nav_chat -> {
-                val intent = Intent(this, ChatActivity::class.java)
+                val intent = Intent(this, ChatListActivity::class.java)
                 intent.putExtra("USER_ID", userId)
                 startActivity(intent)
             }

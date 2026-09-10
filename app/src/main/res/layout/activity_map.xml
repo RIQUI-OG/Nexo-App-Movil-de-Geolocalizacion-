@@ -22,18 +22,75 @@
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:background="?attr/colorPrimary"
-                app:title="Mapa de Ubicaciones"
-                app:navigationIcon="@drawable/ic_arrow_forward" />
+                android:background="#156082"
+                app:title="Ubicación en Tiempo Real" />
 
         </com.google.android.material.appbar.AppBarLayout>
 
-        <fragment
-            android:id="@+id/map"
-            android:name="com.google.android.gms.maps.SupportMapFragment"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+            <androidx.fragment.app.FragmentContainerView
+                android:id="@+id/map"
+                android:name="com.google.android.gms.maps.SupportMapFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <!-- Card de Banner de Ruta Activa -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardActiveTripBanner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_margin="16dp"
+                android:visibility="gone"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="8dp"
+                android:backgroundTint="#156082">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tvTripBannerTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🚀 Ruta Activa: Nombre"
+                        android:textColor="#FFFFFF"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvTripBannerStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🟢 En trayecto seguro"
+                        android:textColor="#A7FFEB"
+                        android:textSize="14sp"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="12dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnFinishTrip"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="🏁 Finalizar Ruta"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        app:backgroundTint="#D32F2F"
+                        app:cornerRadius="12dp" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+        </FrameLayout>
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
@@ -45,8 +102,8 @@
         android:fitsSystemWindows="true"
         app:headerLayout="@layout/nav_header_main"
         app:menu="@menu/drawer_menu"
-        android:background="#FFFFFF"
-        app:itemTextColor="#156082"
-        app:itemIconTint="#156082"/>
+        android:background="#156082"
+        app:itemTextColor="#FFFFFF"
+        app:itemIconTint="#FFFFFF"/>
 
 </androidx.drawerlayout.widget.DrawerLayout>
