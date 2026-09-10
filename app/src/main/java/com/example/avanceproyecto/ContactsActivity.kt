@@ -86,7 +86,7 @@ class ContactsActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         val navView: NavigationView = findViewById(R.id.nav_view)
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
-        supportActionBar?.title = "Mis Contactos"
+        supportActionBar?.title = "Mis Contactos A"
 
         navView.setNavigationItemSelectedListener(this)
 

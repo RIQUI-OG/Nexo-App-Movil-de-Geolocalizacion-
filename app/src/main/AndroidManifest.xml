@@ -73,10 +73,6 @@
             android:exported="false"
             android:theme="@style/Theme.Nexo.NoActionBar" />
 
-        <!--  Rutas seguras / viajes -->
-        <activity
-            android:name=".TripScheduleActivity"
-            android:exported="false" />
 
         <!-- Contactos / Familia -->
         <activity
