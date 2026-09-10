@@ -8,17 +8,17 @@
     <!-- Ubicación -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- Para tracking en segundo plano (Android 10+) -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!-- Notificaciones (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Emergencia / audio en vivo (fase avanzada) -->
+    <!-- Emergencia / Audio -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
-    <!-- Servicio en primer plano (ubicación / emergencia) -->
+    <!-- Servicio en primer plano (Ubicación) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
     <application
         android:allowBackup="true"
@@ -40,6 +40,12 @@
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
+
+        <!-- Servicio de Ubicación en Segundo Plano -->
+        <service
+            android:name=".services.LocationForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
 
         <!-- LAUNCHER -->
         <activity
@@ -72,7 +78,6 @@
             android:name=".MapActivity"
             android:exported="false"
             android:theme="@style/Theme.Nexo.NoActionBar" />
-
 
         <!-- Contactos / Familia -->
         <activity

@@ -10,7 +10,11 @@ import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
@@ -22,9 +26,13 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.example.avanceproyecto.adapters.FloatingContactsAdapter
 import com.example.avanceproyecto.models.ActiveTrip
 import com.example.avanceproyecto.models.RouteAlert
 import com.example.avanceproyecto.models.RoutePoint
+import com.example.avanceproyecto.models.UserConnection
 import com.example.avanceproyecto.utils.RouteTrackingHelper
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -57,6 +65,13 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
     private lateinit var auth: FirebaseAuth
     private lateinit var drawerLayout: DrawerLayout
 
+    // UI para Panel Flotante de Contactos (Estilo Grupo / Familia)
+    private lateinit var cardFloatingContactsPanel: CardView
+    private lateinit var btnToggleFloatingPanel: ImageButton
+    private lateinit var spinnerGroupFilter: Spinner
+    private lateinit var rvFloatingContacts: RecyclerView
+    private var isPanelExpanded = true
+
     // UI para Viaje Activo
     private lateinit var cardActiveTripBanner: CardView
     private lateinit var tvTripBannerTitle: TextView
@@ -68,8 +83,14 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
     private var userName: String = "Usuario"
     private var focusContactId: String? = null
     private var focusContactName: String? = null
+
     private val contactMarkers = mutableMapOf<String, Marker>()
+    private val contactLocationsMap = mutableMapOf<String, LatLng>()
     private var myLocationMarker: Marker? = null
+
+    private val allAcceptedContactsList = mutableListOf<UserConnection>()
+    private val filteredContactsList = mutableListOf<UserConnection>()
+    private lateinit var floatingContactsAdapter: FloatingContactsAdapter
 
     // Viaje activo y dibujado de ruta
     private var currentActiveTrip: ActiveTrip? = null
@@ -103,7 +124,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
         focusContactName = intent.getStringExtra("FOCUS_CONTACT_NAME")
 
         setupToolbarAndDrawer()
-        initActiveTripViews()
+        initViews()
         loadUserName()
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -131,7 +152,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
         requestLocationPermission()
     }
 
-    private fun initActiveTripViews() {
+    private fun initViews() {
+        // Banner de viaje activo
         cardActiveTripBanner = findViewById(R.id.cardActiveTripBanner)
         tvTripBannerTitle = findViewById(R.id.tvTripBannerTitle)
         tvTripBannerStatus = findViewById(R.id.tvTripBannerStatus)
@@ -139,6 +161,84 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
 
         btnFinishTrip.setOnClickListener {
             confirmFinishActiveTrip()
+        }
+
+        // Panel Flotante de Contactos
+        cardFloatingContactsPanel = findViewById(R.id.cardFloatingContactsPanel)
+        btnToggleFloatingPanel = findViewById(R.id.btnToggleFloatingPanel)
+        spinnerGroupFilter = findViewById(R.id.spinnerGroupFilter)
+        rvFloatingContacts = findViewById(R.id.rvFloatingContacts)
+
+        rvFloatingContacts.layoutManager = LinearLayoutManager(this)
+        floatingContactsAdapter = FloatingContactsAdapter(filteredContactsList) { contact ->
+            focusOnContactLocation(contact)
+        }
+        rvFloatingContacts.adapter = floatingContactsAdapter
+
+        btnToggleFloatingPanel.setOnClickListener {
+            toggleFloatingContactsPanel()
+        }
+
+        setupSpinnerFilter()
+    }
+
+    private fun setupSpinnerFilter() {
+        val filterOptions = arrayOf("Familia", "Amigos", "Todos")
+        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, filterOptions)
+        spinnerGroupFilter.adapter = spinnerAdapter
+
+        spinnerGroupFilter.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                filterFloatingContacts(filterOptions[position])
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+    }
+
+    private fun toggleFloatingContactsPanel() {
+        if (isPanelExpanded) {
+            isPanelExpanded = false
+            cardFloatingContactsPanel.visibility = View.GONE
+            btnToggleFloatingPanel.setImageResource(android.R.drawable.ic_media_next)
+        } else {
+            isPanelExpanded = true
+            cardFloatingContactsPanel.visibility = View.VISIBLE
+            btnToggleFloatingPanel.setImageResource(android.R.drawable.ic_media_previous)
+        }
+    }
+
+    private fun filterFloatingContacts(category: String) {
+        filteredContactsList.clear()
+
+        when (category.lowercase()) {
+            "familia", "family" -> {
+                filteredContactsList.addAll(allAcceptedContactsList.filter {
+                    it.type.equals("familia", ignoreCase = true) || it.type.equals("family", ignoreCase = true)
+                })
+            }
+            "amigos", "friend" -> {
+                filteredContactsList.addAll(allAcceptedContactsList.filter {
+                    !it.type.equals("familia", ignoreCase = true) && !it.type.equals("family", ignoreCase = true)
+                })
+            }
+            else -> {
+                filteredContactsList.addAll(allAcceptedContactsList)
+            }
+        }
+
+        floatingContactsAdapter.notifyDataSetChanged()
+    }
+
+    private fun focusOnContactLocation(contact: UserConnection) {
+        val latLng = contactLocationsMap[contact.connectedUserId]
+
+        if (latLng != null && ::mMap.isInitialized) {
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16f))
+            contactMarkers[contact.connectedUserId]?.showInfoWindow()
+            Toast.makeText(this, "📍 Enfocando ubicación de ${contact.connectedUserName}", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "⚠️ Conectando con la señal GPS de ${contact.connectedUserName}...", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -323,7 +423,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
                 centerMapOnLocation(it)
             }
         } ?: run {
-            val defaultLocation = LatLng(19.432608, -99.133209) // CDMX por defecto
+            val defaultLocation = LatLng(19.432608, -99.133209)
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, 13f))
         }
 
@@ -395,6 +495,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
     }
 
     private fun drawMyRoutePolyline(waypoints: List<RoutePoint>, isDeviated: Boolean) {
+        if (!::mMap.isInitialized) return
         myRoutePolyline?.remove()
 
         if (waypoints.size >= 2) {
@@ -555,6 +656,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
     }
 
     private fun drawContactRoutePolyline(contactId: String, trip: ActiveTrip) {
+        if (!::mMap.isInitialized) return
         contactPolylines[contactId]?.remove()
 
         if (trip.waypoints.size >= 2) {
@@ -584,6 +686,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
     }
 
     private fun updateMyLocationOnMap(location: Location) {
+        if (!::mMap.isInitialized) return
         val latLng = LatLng(location.latitude, location.longitude)
 
         if (myLocationMarker == null) {
@@ -596,7 +699,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
             )
 
             if (focusContactId == null) {
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
+                centerMapOnLocation(location)
             }
         } else {
             myLocationMarker?.position = latLng
@@ -604,6 +707,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
     }
 
     private fun centerMapOnLocation(location: Location) {
+        if (!::mMap.isInitialized) return
         val latLng = LatLng(location.latitude, location.longitude)
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
     }
@@ -616,15 +720,21 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
             .whereEqualTo("status", "accepted")
             .get()
             .addOnSuccessListener { documents ->
+                allAcceptedContactsList.clear()
+
                 if (documents.isEmpty()) {
                     Toast.makeText(this@MapActivity, "📍 Mostrando tu ubicación actual. Agrega contactos para ver sus posiciones.", Toast.LENGTH_SHORT).show()
+                    filterFloatingContacts("Familia")
                     return@addOnSuccessListener
                 }
 
                 for (document in documents) {
-                    val connectedUserId = document.getString("connectedUserId") ?: continue
-                    val connectedUserName = document.getString("connectedUserName") ?: "Contacto"
-                    val type = document.getString("type") ?: "friend"
+                    val connection = document.toObject(UserConnection::class.java)
+                    allAcceptedContactsList.add(connection)
+
+                    val connectedUserId = connection.connectedUserId
+                    val connectedUserName = connection.connectedUserName
+                    val type = connection.type
 
                     if (focusContactId != null && connectedUserId != focusContactId) {
                         continue
@@ -632,6 +742,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
 
                     listenToContactLocation(connectedUserId, connectedUserName, type)
                 }
+
+                filterFloatingContacts("Familia")
             }
             .addOnFailureListener { e ->
                 Log.e(TAG, "Error cargando contactos", e)
@@ -649,10 +761,12 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
                     val isEmergency = try { snapshot.child("isEmergency").getValue(Boolean::class.java) } catch (e: Exception) { false } ?: false
 
                     if (latitude != null && longitude != null) {
+                        val latLng = LatLng(latitude, longitude)
+                        contactLocationsMap[contactId] = latLng
+
                         updateContactMarker(contactId, contactName, latitude, longitude, type, isEmergency)
 
                         if (contactId == focusContactId && ::mMap.isInitialized) {
-                            val latLng = LatLng(latitude, longitude)
                             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16f))
                             contactMarkers[contactId]?.showInfoWindow()
                         }
@@ -671,18 +785,19 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
         type: String,
         isEmergency: Boolean
     ) {
+        if (!::mMap.isInitialized) return
         val latLng = LatLng(latitude, longitude)
 
         val markerColor = when {
             isEmergency -> BitmapDescriptorFactory.HUE_RED
-            type == "family" -> BitmapDescriptorFactory.HUE_GREEN
+            type.equals("familia", ignoreCase = true) || type.equals("family", ignoreCase = true) -> BitmapDescriptorFactory.HUE_GREEN
             else -> BitmapDescriptorFactory.HUE_ORANGE
         }
 
         val title = if (isEmergency) "🚨 EMERGENCIA - $contactName" else "📍 $contactName"
         val snippet = when {
             isEmergency -> "¡ALERTA DE EMERGENCIA!"
-            type == "family" -> "👨‍👩‍👧‍👦 Familiar"
+            type.equals("familia", ignoreCase = true) || type.equals("family", ignoreCase = true) -> "👨‍👩‍👧‍👦 Familiar"
             else -> "👤 Amigo"
         }
 

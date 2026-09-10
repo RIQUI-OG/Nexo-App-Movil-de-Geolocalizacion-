@@ -38,6 +38,77 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
 
+            <!-- Panel Flotante de Contactos (Estilo Grupo / Familia) -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start|top"
+                android:layout_marginTop="16dp"
+                android:layout_marginStart="12dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardFloatingContactsPanel"
+                    android:layout_width="120dp"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="10dp"
+                    android:backgroundTint="#FFFFFF">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="10dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Grupo"
+                            android:textColor="#156082"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:gravity="center" />
+
+                        <Spinner
+                            android:id="@+id/spinnerGroupFilter"
+                            android:layout_width="match_parent"
+                            android:layout_height="36dp"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginBottom="4dp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Viendo a"
+                            android:textColor="#757575"
+                            android:textSize="12sp"
+                            android:gravity="center"
+                            android:layout_marginBottom="6dp" />
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/rvFloatingContacts"
+                            android:layout_width="match_parent"
+                            android:layout_height="220dp"
+                            android:scrollbars="vertical" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+                <!-- Botón para Plegar / Desplegar Panel -->
+                <ImageButton
+                    android:id="@+id/btnToggleFloatingPanel"
+                    android:layout_width="32dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_btn_primary"
+                    android:src="@android:drawable/ic_media_previous"
+                    app:tint="#FFFFFF"
+                    android:contentDescription="Ocultar o Mostrar Lista de Contactos" />
+
+            </LinearLayout>
+
             <!-- Card de Banner de Ruta Activa -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardActiveTripBanner"

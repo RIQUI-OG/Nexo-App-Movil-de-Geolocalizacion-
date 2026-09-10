@@ -24,7 +24,10 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import com.example.avanceproyecto.models.ChatMessage
 import com.example.avanceproyecto.models.Emergency
+import com.example.avanceproyecto.services.LocationForegroundService
+import com.example.avanceproyecto.utils.NotificationHelper
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -74,6 +77,24 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
         loadUserData()
         createNotificationChannel()
         requestLocationPermission()
+        startLocationForegroundService()
+    }
+
+    private fun startLocationForegroundService() {
+        if (userId.isEmpty()) return
+        val serviceIntent = Intent(this, LocationForegroundService::class.java).apply {
+            putExtra("USER_ID", userId)
+        }
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun loadUserData() {
@@ -227,6 +248,7 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
             location?.let {
                 saveEmergencyToFirebase(it.latitude, it.longitude)
                 sendNotificationToFamily(it.latitude, it.longitude)
+                sendFamilyGroupEmergencyMessage(it.latitude, it.longitude)
                 showLocalNotification(it.latitude, it.longitude)
             } ?: run {
                 Toast.makeText(this, "❌ No se pudo obtener la ubicación", Toast.LENGTH_SHORT).show()
@@ -265,6 +287,36 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
 
         realtimeDatabase.getReference("locations/$userId")
             .setValue(locationData)
+    }
+
+    private fun sendFamilyGroupEmergencyMessage(latitude: Double, longitude: Double) {
+        if (userId.isEmpty()) return
+
+        val familyGroupId = "group_family_$userId"
+        val msgRef = realtimeDatabase.getReference("chat_messages/$familyGroupId").push()
+        val msgId = msgRef.key ?: System.currentTimeMillis().toString()
+
+        val emergencyMessage = ChatMessage(
+            messageId = msgId,
+            chatId = familyGroupId,
+            senderId = "SYSTEM_EMERGENCY",
+            senderName = "🚨 ALERTA DE EMERGENCIA",
+            text = "🚨 ¡ATENCIÓN FAMILIA! $userName ha activado la alerta de emergencia.\nUbicación GPS: Lat $latitude, Lon $longitude",
+            timestamp = System.currentTimeMillis()
+        )
+
+        msgRef.setValue(emergencyMessage)
+
+        val conversationUpdate = mapOf(
+            "chatId" to familyGroupId,
+            "lastMessage" to "🚨 ¡ALERTA DE EMERGENCIA ACTIVADA POR $userName!",
+            "lastMessageTime" to System.currentTimeMillis(),
+            "title" to "👨‍👩‍👧‍👦 Chat Familiar",
+            "isGroup" to true
+        )
+
+        realtimeDatabase.getReference("chat_conversations/$familyGroupId")
+            .updateChildren(conversationUpdate)
     }
 
     private fun sendNotificationToFamily(latitude: Double, longitude: Double) {
@@ -316,51 +368,32 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
             }
         }
 
-        val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.logo_nexo)
-            .setContentTitle("🚨 Alerta de Seguridad Enviada")
-            .setContentText("$userName ha compartido su ubicación con la familia")
-            .setStyle(
-                NotificationCompat.BigTextStyle()
-                    .bigText("$userName ha activado una alerta de seguridad. Tu familia ha recibido tu ubicación actual.\n\nLat: $latitude, Lon: $longitude")
-            )
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-
-        with(NotificationManagerCompat.from(this)) {
-            notify(NOTIFICATION_ID, notificationBuilder.build())
-        }
+        NotificationHelper.showSecurityAlertNotification(
+            this,
+            "🚨 Alerta de Seguridad Enviada",
+            "$userName ha compartido su ubicación GPS con la familia."
+        )
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Alertas de Seguridad"
-            val descriptionText = "Notificaciones de alerta y ubicación familiar"
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
-                description = descriptionText
-            }
-
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
-        }
+        NotificationHelper.createNotificationChannels(this)
     }
 
     private fun requestLocationPermission() {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                ),
-                LOCATION_PERMISSION_REQUEST_CODE
-            )
+        val permissions = mutableListOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
+
+        ActivityCompat.requestPermissions(
+            this,
+            permissions.toTypedArray(),
+            LOCATION_PERMISSION_REQUEST_CODE
+        )
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
@@ -407,6 +440,7 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
             .setTitle("Cerrar Sesión")
             .setMessage("¿Estás seguro de cerrar sesión?")
             .setPositiveButton("Sí") { _, _ ->
+                stopService(Intent(this, LocationForegroundService::class.java))
                 auth.signOut()
                 startActivity(Intent(this, MainActivity::class.java))
                 finish()
@@ -453,6 +487,7 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
                     if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                         mMap?.isMyLocationEnabled = true
                     }
+                    startLocationForegroundService()
                 }
             }
             100 -> {

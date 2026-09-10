@@ -24,7 +24,11 @@ class ContactsAdapter(
         fun bind(connection: UserConnection) {
             name.text = connection.connectedUserName
             email.text = connection.connectedUserEmail
-            type.text = if (connection.type == "family") "👨‍👩‍👧‍👦 Familiar" else "👤 Amigo"
+
+            val isFamily = connection.type.equals("family", ignoreCase = true) ||
+                           connection.type.equals("familia", ignoreCase = true)
+
+            type.text = if (isFamily) "👨‍👩‍👧‍👦 Familiar" else "👤 Amigo"
 
             btnMore.setOnClickListener {
                 onOptionsClick(connection)

@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.avanceproyecto.adapters.RoutesAdapter
 import com.example.avanceproyecto.models.ActiveTrip
+import com.example.avanceproyecto.models.ChatMessage
 import com.example.avanceproyecto.models.Route
 import com.example.avanceproyecto.models.RouteAlert
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -151,7 +152,7 @@ class RoutesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelec
     private fun startRouteTrip(route: Route) {
         AlertDialog.Builder(this)
             .setTitle("▶️ Iniciar Ruta")
-            .setMessage("¿Deseas iniciar la ruta '${route.routeName}'?\n\nTus familiares recibirán una notificación y podrán ver tu trayecto en el mapa en tiempo real.")
+            .setMessage("¿Deseas iniciar la ruta '${route.routeName}'?\n\nTus familiares recibirán una notificación y un mensaje en el Chat Familiar.")
             .setPositiveButton("Sí, Iniciar") { dialog, _ ->
                 dialog.dismiss()
 
@@ -177,10 +178,10 @@ class RoutesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelec
                     .setValue(activeTrip)
                     .addOnSuccessListener {
                         sendNotificationToFamily(route)
+                        sendFamilyGroupSystemMessage(route)
 
                         Toast.makeText(this, "🚀 ¡Ruta '${route.routeName}' iniciada!", Toast.LENGTH_LONG).show()
 
-                        // Abrir el Mapa en modo de seguimiento
                         val intent = Intent(this, MapActivity::class.java).apply {
                             putExtra("USER_ID", userId)
                             putExtra("ACTIVE_TRIP_ID", tripId)
@@ -212,8 +213,37 @@ class RoutesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelec
             .document(alertId)
             .set(alert)
 
-        // También publicar alerta en Realtime DB
         realtimeDatabase.getReference("route_alerts/$userId").setValue(alert)
+    }
+
+    private fun sendFamilyGroupSystemMessage(route: Route) {
+        if (userId.isEmpty()) return
+
+        val familyGroupId = "group_family_$userId"
+        val msgRef = realtimeDatabase.getReference("chat_messages/$familyGroupId").push()
+        val msgId = msgRef.key ?: System.currentTimeMillis().toString()
+
+        val systemMessage = ChatMessage(
+            messageId = msgId,
+            chatId = familyGroupId,
+            senderId = "SYSTEM_ROUTE",
+            senderName = "🤖 Sistema Nexo",
+            text = "🚀 $userName ha iniciado la ruta '${route.routeName}' (${route.transportMode}). Sigue su ubicación en tiempo real en el mapa.",
+            timestamp = System.currentTimeMillis()
+        )
+
+        msgRef.setValue(systemMessage)
+
+        val conversationUpdate = mapOf(
+            "chatId" to familyGroupId,
+            "lastMessage" to "🚀 $userName inició la ruta '${route.routeName}'",
+            "lastMessageTime" to System.currentTimeMillis(),
+            "title" to "👨‍👩‍👧‍👦 Chat Familiar",
+            "isGroup" to true
+        )
+
+        realtimeDatabase.getReference("chat_conversations/$familyGroupId")
+            .updateChildren(conversationUpdate)
     }
 
     private fun confirmDeleteRoute(route: Route) {
