@@ -13,6 +13,8 @@ import androidx.core.app.NotificationCompat
 import com.example.avanceproyecto.HomeActivity
 import com.example.avanceproyecto.R
 import com.example.avanceproyecto.models.ActiveTrip
+import com.example.avanceproyecto.models.ChatConversation
+import com.example.avanceproyecto.models.ChatMessage
 import com.example.avanceproyecto.models.RouteAlert
 import com.example.avanceproyecto.utils.NotificationHelper
 import com.example.avanceproyecto.utils.RouteTrackingHelper
@@ -37,6 +39,9 @@ class LocationForegroundService : Service() {
     private var userId: String = ""
     private var currentActiveTrip: ActiveTrip? = null
     private val processedAlerts = mutableSetOf<String>()
+    private val processedMessages = mutableSetOf<String>()
+    private val chatMessageListeners = mutableMapOf<String, ValueEventListener>()
+    private var serviceStartTime = System.currentTimeMillis()
 
     companion object {
         private const val TAG = "LocationService"
@@ -50,6 +55,7 @@ class LocationForegroundService : Service() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         userId = auth.currentUser?.uid ?: ""
+        serviceStartTime = System.currentTimeMillis()
 
         NotificationHelper.createNotificationChannels(this)
     }
@@ -71,6 +77,7 @@ class LocationForegroundService : Service() {
         startLocationTracking()
         listenToMyActiveTrip()
         listenToIncomingMessagesAndAlerts()
+        listenToIncomingChatMessages()
 
         return START_STICKY
     }
@@ -208,6 +215,75 @@ class LocationForegroundService : Service() {
                 alertMessage
             )
         }
+    }
+
+    private fun listenToIncomingChatMessages() {
+        if (userId.isEmpty() || userId.startsWith("guest_")) return
+
+        try {
+            realtimeDatabase.getReference("chat_conversations")
+                .addValueEventListener(object : ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        for (convSnapshot in snapshot.children) {
+                            val conversation = try {
+                                convSnapshot.getValue(ChatConversation::class.java)
+                            } catch (e: Exception) {
+                                null
+                            } ?: continue
+
+                            val isMyChat = conversation.isGroup || conversation.chatId.contains(userId) || conversation.participants.contains(userId)
+                            if (isMyChat) {
+                                attachMessageListenerToChat(conversation.chatId, conversation.title)
+                            }
+                        }
+                    }
+
+                    override fun onCancelled(error: DatabaseError) {}
+                })
+        } catch (e: Exception) {
+            Log.e(TAG, "Error escuchando conversaciones de chat", e)
+        }
+    }
+
+    private fun attachMessageListenerToChat(chatId: String, chatTitle: String) {
+        if (chatMessageListeners.containsKey(chatId)) return
+
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                for (msgSnapshot in snapshot.children) {
+                    val message = try {
+                        msgSnapshot.getValue(ChatMessage::class.java)
+                    } catch (e: Exception) {
+                        null
+                    } ?: continue
+
+                    if (message.senderId != userId && message.timestamp >= serviceStartTime) {
+                        if (!processedMessages.contains(message.messageId) && message.messageId.isNotEmpty()) {
+                            processedMessages.add(message.messageId)
+
+                            val displayTitle = if (chatTitle.isNotEmpty()) chatTitle else message.senderName
+                            val displayText = if (chatTitle.isNotEmpty() && !chatTitle.contains(message.senderName)) {
+                                "${message.senderName}: ${message.text}"
+                            } else {
+                                message.text
+                            }
+
+                            NotificationHelper.showChatNotification(
+                                context = this@LocationForegroundService,
+                                senderName = displayTitle,
+                                messageText = displayText,
+                                chatId = chatId
+                            )
+                        }
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {}
+        }
+
+        chatMessageListeners[chatId] = listener
+        realtimeDatabase.getReference("chat_messages/$chatId").addValueEventListener(listener)
     }
 
     private fun listenToIncomingMessagesAndAlerts() {
