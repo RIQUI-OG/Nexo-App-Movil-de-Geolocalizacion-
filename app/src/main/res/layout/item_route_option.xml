@@ -11,7 +11,7 @@
     app:cardElevation="3dp"
     android:clickable="true"
     android:focusable="true"
-    android:backgroundTint="#FFFFFF">
+    android:backgroundTint="?attr/colorSurface">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -32,7 +32,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="11:34 p.m. — 12:01 a.m."
-                android:textColor="#212121"
+                android:textColor="?android:attr/textColorPrimary"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
@@ -41,7 +41,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="27 min"
-                android:textColor="#156082"
+                android:textColor="?attr/colorPrimary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
@@ -80,7 +80,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="MXN 5.00 • 12.5 km • Cada 3 min"
-            android:textColor="#757575"
+            android:textColor="?android:attr/textColorSecondary"
             android:textSize="12sp" />
 
     </LinearLayout>

@@ -12,7 +12,7 @@
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@drawable/background_gradient">
+        android:background="?android:attr/colorBackground">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -24,7 +24,7 @@
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:background="@android:color/transparent"
+                android:background="?attr/colorPrimary"
                 android:elevation="4dp"
                 android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
                 app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
@@ -42,7 +42,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Mis Contactos"
-                    android:textColor="#156082"
+                    android:textColor="?attr/colorPrimary"
                     android:textSize="36sp"
                     android:textStyle="bold"
                     android:gravity="center" />
@@ -52,7 +52,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Familia y amigos que comparten ubicación"
-                    android:textColor="#156082"
+                    android:textColor="?attr/colorPrimary"
                     android:textSize="14sp"
                     android:alpha="0.9"
                     android:gravity="center" />
@@ -68,7 +68,7 @@
                 android:layout_marginEnd="16dp"
                 android:layout_marginBottom="8dp"
                 android:text="Solicitudes Pendientes"
-                android:textColor="#FFFFFF"
+                android:textColor="?attr/colorOnPrimary"
                 android:textSize="15sp"
                 android:textStyle="bold"
                 android:drawableStart="@drawable/ic_email"
@@ -108,7 +108,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:text="No tienes contactos aún"
-                    android:textColor="#FFFFFF"
+                    android:textColor="?attr/colorOnPrimary"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
@@ -117,7 +117,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="Presiona + para agregar familia y amigos"
-                    android:textColor="#FFFFFF"
+                    android:textColor="?attr/colorOnPrimary"
                     android:textSize="14sp"
                     android:alpha="0.8"
                     android:gravity="center" />
@@ -134,8 +134,8 @@
             android:layout_gravity="bottom|end"
             android:layout_margin="20dp"
             android:src="@android:drawable/ic_input_add"
-            app:backgroundTint="#00BFA6"
-            app:tint="#FFFFFF"
+            app:backgroundTint="?attr/colorSecondary"
+            app:tint="?attr/colorOnPrimary"
             app:elevation="6dp"
             app:pressedTranslationZ="12dp" />
 
@@ -149,9 +149,6 @@
         android:layout_gravity="start"
         android:fitsSystemWindows="true"
         app:headerLayout="@layout/nav_header_main"
-        android:background="#156082"
-        app:menu="@menu/drawer_menu"
-        app:itemTextColor="#FFFFFF"
-        app:itemIconTint="#FFFFFF" />
+        app:menu="@menu/drawer_menu" />
 
 </androidx.drawerlayout.widget.DrawerLayout>

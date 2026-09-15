@@ -311,7 +311,7 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
             "chatId" to familyGroupId,
             "lastMessage" to "🚨 ¡ALERTA DE EMERGENCIA ACTIVADA POR $userName!",
             "lastMessageTime" to System.currentTimeMillis(),
-            "title" to "👨‍👩‍👧‍👦 Chat Familiar",
+            "title" to "👨‍👩‍👧‍👦 Familia de $userName",
             "isGroup" to true
         )
 

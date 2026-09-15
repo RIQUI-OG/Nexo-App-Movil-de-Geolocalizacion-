@@ -238,7 +238,7 @@ class RoutesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelec
             "chatId" to familyGroupId,
             "lastMessage" to "🚀 $userName inició la ruta '${route.routeName}'",
             "lastMessageTime" to System.currentTimeMillis(),
-            "title" to "👨‍👩‍👧‍👦 Chat Familiar",
+            "title" to "👨‍👩‍👧‍👦 Familia de $userName",
             "isGroup" to true
         )
 

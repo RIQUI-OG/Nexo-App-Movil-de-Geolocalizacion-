@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Agregar Contacto"
-        android:textColor="#156082"
+        android:textColor="?attr/colorPrimary"
         android:textSize="20sp"
         android:textStyle="bold"
         android:gravity="center"
@@ -21,7 +21,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Nombre del contacto:"
-        android:textColor="#156082"
+        android:textColor="?attr/colorPrimary"
         android:textSize="14sp"
         android:textStyle="bold"
         android:layout_marginBottom="6dp" />
@@ -32,7 +32,7 @@
         android:layout_height="wrap_content"
         android:hint="Ej. Juan Pérez"
         android:inputType="textPersonName"
-        android:textColor="#000000"
+        android:textColor="?android:attr/textColorPrimary"
         android:textColorHint="#757575"
         android:textSize="16sp"
         android:padding="12dp"
@@ -43,7 +43,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Correo electrónico:"
-        android:textColor="#156082"
+        android:textColor="?attr/colorPrimary"
         android:textSize="14sp"
         android:textStyle="bold"
         android:layout_marginBottom="6dp" />
@@ -54,7 +54,7 @@
         android:layout_height="wrap_content"
         android:hint="correo@ejemplo.com"
         android:inputType="textEmailAddress"
-        android:textColor="#000000"
+        android:textColor="?android:attr/textColorPrimary"
         android:textColorHint="#757575"
         android:textSize="16sp"
         android:padding="12dp"
@@ -65,7 +65,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Selecciona la categoría:"
-        android:textColor="#156082"
+        android:textColor="?attr/colorPrimary"
         android:textSize="14sp"
         android:textStyle="bold"
         android:layout_marginBottom="8dp" />
@@ -96,6 +96,14 @@
             android:textColor="#333333" />
 
         <RadioButton
+            android:id="@+id/rbNino"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Niño"
+            android:textColor="#333333" />
+
+        <RadioButton
             android:id="@+id/rbOtros"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -109,7 +117,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Enviar Solicitud"
-        android:textColor="#FFFFFF"
+        android:textColor="?attr/colorOnPrimary"
         android:textSize="16sp"
         android:textStyle="bold"
         android:padding="12dp"

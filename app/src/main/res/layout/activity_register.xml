@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/background_gradient"
+    android:background="?android:attr/colorBackground"
     tools:context=".RegisterActivity">
 
     <ImageView
@@ -25,7 +25,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:text="CREAR CUENTA"
-        android:textColor="#156082"
+        android:textColor="?attr/colorPrimary"
         android:textSize="28sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
@@ -38,7 +38,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:text="Únete a la comunidad Nexo"
-        android:textColor="#156082"
+        android:textColor="?attr/colorPrimary"
         android:textSize="16sp"
         android:alpha="0.8"
         app:layout_constraintEnd_toEndOf="parent"
@@ -78,7 +78,7 @@
                     android:background="@drawable/edittext_background"
                     android:hint="Nombre completo"
                     android:padding="16dp"
-                    android:textColor="#156082"
+                    android:textColor="?attr/colorPrimary"
                     android:textColorHint="#156082"
                     android:textSize="16sp"
                     android:inputType="textPersonName" />
@@ -91,7 +91,7 @@
                     android:background="@drawable/edittext_background"
                     android:hint="Correo electrónico"
                     android:padding="16dp"
-                    android:textColor="#156082"
+                    android:textColor="?attr/colorPrimary"
                     android:textColorHint="#156082"
                     android:textSize="16sp"
                     android:inputType="textEmailAddress" />
@@ -104,7 +104,7 @@
                     android:background="@drawable/edittext_background"
                     android:hint="Teléfono"
                     android:padding="16dp"
-                    android:textColor="#156082"
+                    android:textColor="?attr/colorPrimary"
                     android:textColorHint="#156082"
                     android:textSize="16sp"
                     android:inputType="phone" />
@@ -117,7 +117,7 @@
                     android:background="@drawable/edittext_background"
                     android:hint="Contraseña"
                     android:padding="16dp"
-                    android:textColor="#156082"
+                    android:textColor="?attr/colorPrimary"
                     android:textColorHint="#156082"
                     android:textSize="16sp"
                     android:inputType="textPassword" />
@@ -128,7 +128,7 @@
                     android:layout_height="55dp"
                     android:background="@drawable/button_rounded_secondary"
                     android:text="CREAR CUENTA"
-                    android:textColor="#FFFFFF"
+                    android:textColor="?attr/colorOnPrimary"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:elevation="4dp" />
@@ -141,7 +141,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="Al registrarte, aceptas nuestros Términos y Condiciones"
-                android:textColor="#FFFFFF"
+                android:textColor="?attr/colorOnPrimary"
                 android:textSize="12sp"
                 android:alpha="0.8"
                 android:gravity="center"
@@ -161,7 +161,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:text="¿Ya tienes una cuenta?"
-                android:textColor="#FFFFFF"
+                android:textColor="?attr/colorOnPrimary"
                 android:textSize="14sp"
                 android:alpha="0.8" />
 
@@ -172,7 +172,7 @@
                 android:layout_marginTop="12dp"
                 android:background="@drawable/button_rounded_white"
                 android:text="INICIAR SESIÓN"
-                android:textColor="#156082"
+                android:textColor="?attr/colorPrimary"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:elevation="4dp" />

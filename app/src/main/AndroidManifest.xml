@@ -12,6 +12,7 @@
 
     <!-- Notificaciones (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <!-- Emergencia / Audio -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -21,6 +22,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
     <application
+        android:name=".NexoApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -28,7 +30,7 @@
         android:roundIcon="@drawable/logo_nexo"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.NoActionBar"
+        android:theme="@style/Theme.Nexo.NoActionBar"
         tools:targetApi="31">
 
         <!-- 🗺Google Maps API KEY -->
@@ -46,6 +48,19 @@
             android:name=".services.LocationForegroundService"
             android:exported="false"
             android:foregroundServiceType="location" />
+
+        <!-- Administrador de Dispositivos (Prevención de Desinstalación / Modo Parental) -->
+        <receiver
+            android:name=".utils.AdminReceiver"
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
+            android:exported="true">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin_policies" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
 
         <!-- LAUNCHER -->
         <activity

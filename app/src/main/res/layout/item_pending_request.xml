@@ -10,7 +10,7 @@
     android:layout_marginBottom="6dp"
     app:cardCornerRadius="12dp"
     app:cardElevation="3dp"
-    android:backgroundTint="#156082">
+    android:backgroundTint="?attr/colorPrimary">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -23,7 +23,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Nombre del Contacto"
-            android:textColor="#FFFFFF"
+            android:textColor="?attr/colorOnPrimary"
             android:textSize="16sp"
             android:textStyle="bold" />
 
@@ -68,9 +68,9 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="✅ Aceptar"
-                android:textColor="#FFFFFF"
+                android:textColor="?attr/colorOnPrimary"
                 android:textStyle="bold"
-                app:backgroundTint="#00BFA6"
+                app:backgroundTint="?attr/colorSecondary"
                 app:cornerRadius="8dp" />
 
         </LinearLayout>

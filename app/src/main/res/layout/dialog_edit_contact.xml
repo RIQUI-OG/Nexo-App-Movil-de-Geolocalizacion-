@@ -36,7 +36,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Editar Contacto"
-                android:textColor="#156082"
+                android:textColor="?attr/colorPrimary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
@@ -45,7 +45,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Nombre Actual"
-                android:textColor="#757575"
+                android:textColor="?android:attr/textColorSecondary"
                 android:textSize="13sp" />
         </LinearLayout>
 
@@ -54,7 +54,7 @@
             android:layout_width="wrap_content"
             android:layout_height="36dp"
             android:text="Chat"
-            android:textColor="#FFFFFF"
+            android:textColor="?attr/colorOnPrimary"
             android:textSize="12sp"
             android:textStyle="bold"
             android:drawableStart="@drawable/ic_send"
@@ -69,7 +69,7 @@
             android:layout_width="wrap_content"
             android:layout_height="36dp"
             android:text="Mapa"
-            android:textColor="#156082"
+            android:textColor="?attr/colorPrimary"
             android:textSize="12sp"
             android:textStyle="bold"
             android:drawableStart="@drawable/baseline_map_24"
@@ -85,7 +85,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Nombre del contacto:"
-        android:textColor="#156082"
+        android:textColor="?attr/colorPrimary"
         android:textSize="14sp"
         android:textStyle="bold"
         android:layout_marginBottom="6dp" />
@@ -96,7 +96,7 @@
         android:layout_height="wrap_content"
         android:hint="Nombre del contacto"
         android:inputType="textPersonName"
-        android:textColor="#000000"
+        android:textColor="?android:attr/textColorPrimary"
         android:textColorHint="#757575"
         android:textSize="16sp"
         android:padding="12dp"
@@ -108,7 +108,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Categoría:"
-        android:textColor="#156082"
+        android:textColor="?attr/colorPrimary"
         android:textSize="14sp"
         android:textStyle="bold"
         android:layout_marginBottom="8dp" />
@@ -152,7 +152,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Guardar Cambios"
-        android:textColor="#FFFFFF"
+        android:textColor="?attr/colorOnPrimary"
         android:textSize="16sp"
         android:textStyle="bold"
         android:padding="12dp"
@@ -168,6 +168,6 @@
         android:textColor="#D32F2F"
         android:textSize="15sp"
         android:textStyle="bold"
-        android:background="@android:color/transparent" />
+        android:background="?attr/colorPrimary" />
 
 </LinearLayout>

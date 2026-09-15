@@ -1,16 +1,20 @@
 package com.example.avanceproyecto
 
+import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.avanceproyecto.adapters.MessagesAdapter
 import com.example.avanceproyecto.models.ChatMessage
+import com.example.avanceproyecto.models.UserConnection
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -37,6 +41,7 @@ class ChatActivity : AppCompatActivity() {
     private var contactName: String = "Contacto"
     private var chatId: String = ""
     private var isGroup: Boolean = false
+    private lateinit var btnAddMember: ImageButton
 
     private val messagesList = mutableListOf<ChatMessage>()
     private lateinit var adapter: MessagesAdapter
@@ -76,16 +81,113 @@ class ChatActivity : AppCompatActivity() {
         btnBack = findViewById(R.id.btnBack)
         tvChatUser = findViewById(R.id.tvChatUser)
         tvChatStatus = findViewById(R.id.tvChatStatus)
+        btnAddMember = findViewById(R.id.btnAddMember)
 
         tvChatUser.text = contactName
         tvChatStatus.text = if (isGroup) "Grupo de chat" else "En línea"
 
+        if (isGroup) {
+            btnAddMember.visibility = View.VISIBLE
+            btnAddMember.setOnClickListener {
+                showAddMemberDialog()
+            }
+        }
+
         btnBack.setOnClickListener {
-            finish()
+            handleBack()
         }
 
         btnSend.setOnClickListener {
             sendMessage()
+        }
+    }
+
+    private fun handleBack() {
+        if (isTaskRoot || intent.getBooleanExtra("FROM_NOTIFICATION", false)) {
+            val homeIntent = Intent(this, HomeActivity::class.java).apply {
+                putExtra("USER_ID", myUserId)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            startActivity(homeIntent)
+        }
+        finish()
+    }
+
+    override fun onBackPressed() {
+        super.onBackPressed()
+        handleBack()
+    }
+
+    private fun showAddMemberDialog() {
+        if (myUserId.isEmpty() || chatId.isEmpty()) return
+
+        firestore.collection("connections")
+            .whereEqualTo("userId", myUserId)
+            .whereEqualTo("status", "accepted")
+            .get()
+            .addOnSuccessListener { documents ->
+                val contacts = mutableListOf<UserConnection>()
+                for (doc in documents) {
+                    val connection = doc.toObject(UserConnection::class.java)
+                    contacts.add(connection)
+                }
+
+                if (contacts.isEmpty()) {
+                    Toast.makeText(this, "No tienes contactos para agregar.", Toast.LENGTH_SHORT).show()
+                    return@addOnSuccessListener
+                }
+
+                realtimeDatabase.getReference("chat_conversations/$chatId/participants")
+                    .get().addOnSuccessListener { snapshot ->
+                        val currentParticipants = snapshot.children.mapNotNull { it.getValue(String::class.java) }
+                        
+                        val availableContacts = contacts.filter { !currentParticipants.contains(it.connectedUserId) }
+                        
+                        if (availableContacts.isEmpty()) {
+                            Toast.makeText(this, "Todos tus contactos ya están en este grupo.", Toast.LENGTH_SHORT).show()
+                            return@addOnSuccessListener
+                        }
+
+                        val contactNames = availableContacts.map { it.connectedUserName }.toTypedArray()
+
+                        AlertDialog.Builder(this)
+                            .setTitle("Agregar miembro al grupo")
+                            .setItems(contactNames) { _, which ->
+                                val selectedContact = availableContacts[which]
+                                addNewMemberToGroup(selectedContact)
+                            }
+                            .show()
+                    }
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Error al cargar contactos.", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun addNewMemberToGroup(contact: UserConnection) {
+        val participantsRef = realtimeDatabase.getReference("chat_conversations/$chatId/participants")
+        participantsRef.get().addOnSuccessListener { snapshot ->
+            val currentList = snapshot.children.mapNotNull { it.getValue(String::class.java) }.toMutableList()
+            if (!currentList.contains(contact.connectedUserId)) {
+                currentList.add(contact.connectedUserId)
+                participantsRef.setValue(currentList)
+                
+                // Mensaje del sistema
+                val messageRef = realtimeDatabase.getReference("chat_messages/$chatId").push()
+                val chatMessage = ChatMessage(
+                    messageId = messageRef.key ?: System.currentTimeMillis().toString(),
+                    chatId = chatId,
+                    senderId = "SYSTEM",
+                    senderName = "Sistema",
+                    text = "${contact.connectedUserName} fue agregado al grupo.",
+                    timestamp = System.currentTimeMillis()
+                )
+                messageRef.setValue(chatMessage)
+                
+                realtimeDatabase.getReference("chat_conversations/$chatId/lastMessage").setValue("${contact.connectedUserName} se unió.")
+                
+                Toast.makeText(this, "${contact.connectedUserName} agregado al grupo.", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 

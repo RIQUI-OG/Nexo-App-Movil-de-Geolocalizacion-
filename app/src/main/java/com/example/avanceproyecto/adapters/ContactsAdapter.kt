@@ -27,8 +27,15 @@ class ContactsAdapter(
 
             val isFamily = connection.type.equals("family", ignoreCase = true) ||
                            connection.type.equals("familia", ignoreCase = true)
+            val isNino = connection.type.equals("niño", ignoreCase = true)
+            val isTutor = connection.type.equals("tutor", ignoreCase = true)
 
-            type.text = if (isFamily) "👨‍👩‍👧‍👦 Familiar" else "👤 Amigo"
+            type.text = when {
+                isNino -> "🧒 Niño (Protegido)"
+                isTutor -> "🛡️ Tutor"
+                isFamily -> "👨‍👩‍👧‍👦 Familiar"
+                else -> "👤 Amigo"
+            }
 
             btnMore.setOnClickListener {
                 onOptionsClick(connection)

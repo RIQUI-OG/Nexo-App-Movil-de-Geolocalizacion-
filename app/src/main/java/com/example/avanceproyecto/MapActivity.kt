@@ -4,6 +4,8 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
 import android.location.Location
 import android.os.Bundle
@@ -43,6 +45,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
@@ -102,6 +105,10 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
 
     private lateinit var locationCallback: LocationCallback
     private lateinit var locationRequest: LocationRequest
+
+    private var myActiveTripListener: ValueEventListener? = null
+    private val contactTripListeners = mutableMapOf<String, ValueEventListener>()
+    private val contactLocationListeners = mutableMapOf<String, ValueEventListener>()
 
     companion object {
         private const val TAG = "MapActivity"
@@ -440,31 +447,31 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
         if (userId.isEmpty() || userId.startsWith("guest_")) return
 
         try {
-            realtimeDatabase.getReference("active_trips/$userId")
-                .addValueEventListener(object : ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        if (!snapshot.exists()) {
-                            hideMyActiveTrip()
-                            return
-                        }
-
-                        val trip = try {
-                            snapshot.getValue(ActiveTrip::class.java)
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Error parseando ActiveTrip", e)
-                            null
-                        }
-
-                        if (trip != null && (trip.status == "IN_PROGRESS" || trip.status == "DEVIATED")) {
-                            currentActiveTrip = trip
-                            showMyActiveTrip(trip)
-                        } else {
-                            hideMyActiveTrip()
-                        }
+            myActiveTripListener = object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (!snapshot.exists()) {
+                        hideMyActiveTrip()
+                        return
                     }
 
-                    override fun onCancelled(error: DatabaseError) {}
-                })
+                    val trip = try {
+                        snapshot.getValue(ActiveTrip::class.java)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error parseando ActiveTrip", e)
+                        null
+                    }
+
+                    if (trip != null && (trip.status == "IN_PROGRESS" || trip.status == "DEVIATED")) {
+                        currentActiveTrip = trip
+                        showMyActiveTrip(trip)
+                    } else {
+                        hideMyActiveTrip()
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {}
+            }
+            realtimeDatabase.getReference("active_trips/$userId").addValueEventListener(myActiveTripListener!!)
         } catch (e: Exception) {
             Log.e(TAG, "Error consultando viaje activo", e)
         }
@@ -520,6 +527,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
+            } else {
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(currentLocation!!.latitude, currentLocation!!.longitude), 18f))
             }
         }
     }
@@ -582,8 +591,16 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
                     .addOnSuccessListener {
                         sendCompletionAlertToFamily(trip)
                         hideMyActiveTrip()
-                        Toast.makeText(this, "✅ Ruta desactivada y finalizada con éxito", Toast.LENGTH_LONG).show()
                     }
+
+                Toast.makeText(this@MapActivity, "✅ Ruta desactivada y finalizada con éxito", Toast.LENGTH_LONG).show()
+                // Regresar al HomeActivity de inmediato
+                val homeIntent = Intent(this@MapActivity, HomeActivity::class.java).apply {
+                    putExtra("USER_ID", userId)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                startActivity(homeIntent)
+                finish()
             }
             .setNegativeButton("Cancelar", null)
             .show()
@@ -620,37 +637,38 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
                     val contactId = doc.getString("connectedUserId") ?: continue
                     val contactName = doc.getString("connectedUserName") ?: "Contacto"
 
-                    realtimeDatabase.getReference("active_trips/$contactId")
-                        .addValueEventListener(object : ValueEventListener {
-                            override fun onDataChange(snapshot: DataSnapshot) {
-                                if (!snapshot.exists()) {
-                                    contactPolylines[contactId]?.remove()
-                                    contactPolylines.remove(contactId)
-                                    return
-                                }
-
-                                val trip = try {
-                                    snapshot.getValue(ActiveTrip::class.java)
-                                } catch (e: Exception) {
-                                    Log.e(TAG, "Error parseando viaje de contacto", e)
-                                    null
-                                } ?: return
-
-                                if (trip.status == "IN_PROGRESS" || trip.status == "DEVIATED") {
-                                    drawContactRoutePolyline(contactId, trip)
-
-                                    if (trip.status == "DEVIATED" && !notifiedDeviations.contains(contactId)) {
-                                        notifiedDeviations.add(contactId)
-                                        showContactDeviationDialog(contactName, trip.routeName)
-                                    }
-                                } else {
-                                    contactPolylines[contactId]?.remove()
-                                    contactPolylines.remove(contactId)
-                                }
+                    val listener = object : ValueEventListener {
+                        override fun onDataChange(snapshot: DataSnapshot) {
+                            if (!snapshot.exists()) {
+                                contactPolylines[contactId]?.remove()
+                                contactPolylines.remove(contactId)
+                                return
                             }
 
-                            override fun onCancelled(error: DatabaseError) {}
-                        })
+                            val trip = try {
+                                snapshot.getValue(ActiveTrip::class.java)
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error parseando viaje de contacto", e)
+                                null
+                            } ?: return
+
+                            if (trip.status == "IN_PROGRESS" || trip.status == "DEVIATED") {
+                                drawContactRoutePolyline(contactId, trip)
+
+                                if (trip.status == "DEVIATED" && !notifiedDeviations.contains(contactId)) {
+                                    notifiedDeviations.add(contactId)
+                                    showContactDeviationDialog(contactName, trip.routeName)
+                                }
+                            } else {
+                                contactPolylines[contactId]?.remove()
+                                contactPolylines.remove(contactId)
+                            }
+                        }
+
+                        override fun onCancelled(error: DatabaseError) {}
+                    }
+                    contactTripListeners[contactId] = listener
+                    realtimeDatabase.getReference("active_trips/$contactId").addValueEventListener(listener)
                 }
             }
     }
@@ -685,9 +703,31 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
             .show()
     }
 
+    private fun getBitmapDescriptorForTransport(transportMode: String): BitmapDescriptor {
+        val vectorResId = when (transportMode.lowercase()) {
+            "caminando", "walk" -> R.drawable.ic_directions_walk
+            "bicicleta", "bike" -> R.drawable.ic_directions_bike
+            "transporte público", "bus" -> R.drawable.ic_directions_bus
+            else -> R.drawable.ic_directions_car // coche, car, default
+        }
+
+        val vectorDrawable = ContextCompat.getDrawable(this, vectorResId)
+            ?: return BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+
+        val size = (42 * resources.displayMetrics.density).toInt()
+        vectorDrawable.setBounds(0, 0, size, size)
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        vectorDrawable.draw(canvas)
+        return BitmapDescriptorFactory.fromBitmap(bitmap)
+    }
+
     private fun updateMyLocationOnMap(location: Location) {
         if (!::mMap.isInitialized) return
         val latLng = LatLng(location.latitude, location.longitude)
+
+        val icon = currentActiveTrip?.let { getBitmapDescriptorForTransport(it.transportMode) }
+            ?: BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
 
         if (myLocationMarker == null) {
             myLocationMarker = mMap.addMarker(
@@ -695,7 +735,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
                     .position(latLng)
                     .title("Tu ubicación actual")
                     .snippet("Lat: ${location.latitude}, Lon: ${location.longitude}")
-                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+                    .icon(icon)
             )
 
             if (focusContactId == null) {
@@ -703,13 +743,14 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
             }
         } else {
             myLocationMarker?.position = latLng
+            myLocationMarker?.setIcon(icon)
         }
     }
 
     private fun centerMapOnLocation(location: Location) {
         if (!::mMap.isInitialized) return
         val latLng = LatLng(location.latitude, location.longitude)
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18f))
     }
 
     private fun loadContactsLocations() {
@@ -751,30 +792,31 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
     }
 
     private fun listenToContactLocation(contactId: String, contactName: String, type: String) {
-        realtimeDatabase.getReference("locations/$contactId")
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    if (!snapshot.exists()) return
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (!snapshot.exists()) return
 
-                    val latitude = try { snapshot.child("latitude").getValue(Double::class.java) } catch (e: Exception) { null }
-                    val longitude = try { snapshot.child("longitude").getValue(Double::class.java) } catch (e: Exception) { null }
-                    val isEmergency = try { snapshot.child("isEmergency").getValue(Boolean::class.java) } catch (e: Exception) { false } ?: false
+                val latitude = try { snapshot.child("latitude").getValue(Double::class.java) } catch (e: Exception) { null }
+                val longitude = try { snapshot.child("longitude").getValue(Double::class.java) } catch (e: Exception) { null }
+                val isEmergency = try { snapshot.child("isEmergency").getValue(Boolean::class.java) } catch (e: Exception) { false } ?: false
 
-                    if (latitude != null && longitude != null) {
-                        val latLng = LatLng(latitude, longitude)
-                        contactLocationsMap[contactId] = latLng
+                if (latitude != null && longitude != null) {
+                    val latLng = LatLng(latitude, longitude)
+                    contactLocationsMap[contactId] = latLng
 
-                        updateContactMarker(contactId, contactName, latitude, longitude, type, isEmergency)
+                    updateContactMarker(contactId, contactName, latitude, longitude, type, isEmergency)
 
-                        if (contactId == focusContactId && ::mMap.isInitialized) {
-                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16f))
-                            contactMarkers[contactId]?.showInfoWindow()
-                        }
+                    if (contactId == focusContactId && ::mMap.isInitialized) {
+                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16f))
+                        contactMarkers[contactId]?.showInfoWindow()
                     }
                 }
+            }
 
-                override fun onCancelled(error: DatabaseError) {}
-            })
+            override fun onCancelled(error: DatabaseError) {}
+        }
+        contactLocationListeners[contactId] = listener
+        realtimeDatabase.getReference("locations/$contactId").addValueEventListener(listener)
     }
 
     private fun updateContactMarker(
@@ -855,6 +897,17 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
     override fun onPause() {
         super.onPause()
         fusedLocationClient.removeLocationUpdates(locationCallback)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        
+        // Optimización de batería: Remover listeners para evitar memory leaks y consumo en background
+        myActiveTripListener?.let { realtimeDatabase.getReference("active_trips/$userId").removeEventListener(it) }
+        contactTripListeners.forEach { (id, listener) -> realtimeDatabase.getReference("active_trips/$id").removeEventListener(listener) }
+        contactLocationListeners.forEach { (id, listener) -> realtimeDatabase.getReference("locations/$id").removeEventListener(listener) }
+        contactTripListeners.clear()
+        contactLocationListeners.clear()
     }
 
     override fun onBackPressed() {

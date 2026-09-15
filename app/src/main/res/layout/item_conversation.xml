@@ -12,7 +12,7 @@
     app:cardElevation="3dp"
     android:clickable="true"
     android:focusable="true"
-    android:backgroundTint="#FFFFFF">
+    android:backgroundTint="?attr/colorSurface">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -27,7 +27,7 @@
             android:layout_height="48dp"
             app:cardCornerRadius="24dp"
             app:cardElevation="1dp"
-            android:backgroundTint="#156082">
+            android:backgroundTint="?attr/colorPrimary">
 
             <TextView
                 android:id="@+id/tvAvatarIcon"
@@ -60,7 +60,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Nombre del Chat / Grupo"
-                    android:textColor="#156082"
+                    android:textColor="?attr/colorPrimary"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:maxLines="1"
@@ -71,21 +71,58 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="10:45 AM"
-                    android:textColor="#757575"
+                    android:textColor="?android:attr/textColorSecondary"
                     android:textSize="11sp" />
 
             </LinearLayout>
 
             <TextView
-                android:id="@+id/tvLastMessage"
+                android:id="@+id/tvGroupMembers"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Último mensaje enviado o recibido..."
-                android:textColor="#616161"
-                android:textSize="13sp"
+                android:text="Miembros del grupo"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="12sp"
                 android:maxLines="1"
-                android:ellipsize="end" />
+                android:ellipsize="end"
+                android:visibility="gone"
+                android:layout_marginTop="2dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp">
+
+                <TextView
+                    android:id="@+id/tvLastMessage"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="Último mensaje enviado o recibido..."
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="13sp"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+                <TextView
+                    android:id="@+id/tvUnreadCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/badge_background"
+                    android:textColor="?attr/colorOnPrimary"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp"
+                    android:gravity="center"
+                    android:text="2"
+                    android:layout_marginStart="8dp"
+                    android:visibility="gone" />
+            </LinearLayout>
 
         </LinearLayout>
 

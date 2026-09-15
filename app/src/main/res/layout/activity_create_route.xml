@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@drawable/background_gradient"
+    android:background="?android:attr/colorBackground"
     tools:context=".CreateRouteActivity">
 
     <!-- Header con Toolbar -->
@@ -14,7 +14,7 @@
         android:id="@+id/toolbarCreateRoute"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@android:color/transparent"
+        android:background="?attr/colorPrimary"
         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
@@ -22,7 +22,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Crear Ruta - Google Maps"
-        android:textColor="#FFFFFF"
+        android:textColor="?attr/colorOnPrimary"
         android:textSize="22sp"
         android:textStyle="bold"
         android:gravity="center"
@@ -38,7 +38,7 @@
         android:layout_marginBottom="12dp"
         app:cardCornerRadius="16dp"
         app:cardElevation="6dp"
-        android:backgroundTint="#FFFFFF">
+        android:backgroundTint="?attr/colorSurface">
 
         <ScrollView
             android:layout_width="match_parent"
@@ -60,7 +60,7 @@
                     android:hint="Nombre de la ruta (Ej: Trabajo - Casa)"
                     android:textColorHint="#757575"
                     app:boxStrokeColor="#156082"
-                    app:hintTextColor="#156082"
+                    app:hintTextColor="?attr/colorPrimary"
                     android:layout_marginBottom="8dp">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -68,7 +68,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="text"
-                        android:textColor="#000000"
+                        android:textColor="?android:attr/textColorPrimary"
                         android:textSize="14sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -128,7 +128,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="📍 Usar mi ubicación actual como partida"
-                    android:textColor="#156082"
+                    android:textColor="?attr/colorPrimary"
                     app:chipIcon="@android:drawable/ic_menu_mylocation"
                     app:chipIconTint="#156082"
                     app:chipBackgroundColor="#E1F5FE"
@@ -155,7 +155,7 @@
                             android:layout_height="wrap_content"
                             android:hint="🔘 Partida (Dirección o nombre)"
                             android:inputType="text"
-                            android:textColor="#000000"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="14sp"
                             android:padding="12dp"
                             android:background="@drawable/edittext_background"
@@ -169,7 +169,7 @@
                             android:layout_height="wrap_content"
                             android:hint="📍 Destino (Dirección o nombre)"
                             android:inputType="text"
-                            android:textColor="#000000"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="14sp"
                             android:padding="12dp"
                             android:background="@drawable/edittext_background"
@@ -199,10 +199,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="🔍 Buscar Opciones de Ruta con Google Maps"
-                    android:textColor="#FFFFFF"
+                    android:textColor="?attr/colorOnPrimary"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    app:backgroundTint="#00BFA6"
+                    app:backgroundTint="?attr/colorSecondary"
                     app:cornerRadius="10dp"
                     android:layout_marginBottom="8dp" />
 
@@ -212,7 +212,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="👉 Escribe origen y destino (o toca el mapa) para ver todas las formas de llegar"
-                    android:textColor="#156082"
+                    android:textColor="?attr/colorPrimary"
                     android:textSize="13sp"
                     android:gravity="center"
                     android:layout_marginBottom="8dp" />
@@ -263,10 +263,10 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="2"
                         android:text="💾 Guardar Ruta"
-                        android:textColor="#FFFFFF"
+                        android:textColor="?attr/colorOnPrimary"
                         android:textSize="15sp"
                         android:textStyle="bold"
-                        app:backgroundTint="#156082"
+                        app:backgroundTint="?attr/colorPrimary"
                         app:cornerRadius="10dp" />
 
                 </LinearLayout>

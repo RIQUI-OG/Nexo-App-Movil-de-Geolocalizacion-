@@ -22,7 +22,7 @@
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:background="#156082"
+                android:background="?attr/colorPrimary"
                 app:title="Ubicación en Tiempo Real" />
 
         </com.google.android.material.appbar.AppBarLayout>
@@ -54,7 +54,7 @@
                     android:layout_height="wrap_content"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="10dp"
-                    android:backgroundTint="#FFFFFF">
+                    android:backgroundTint="?attr/colorSurface">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -66,7 +66,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Grupo"
-                            android:textColor="#156082"
+                            android:textColor="?attr/colorPrimary"
                             android:textSize="18sp"
                             android:textStyle="bold"
                             android:gravity="center" />
@@ -82,7 +82,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Viendo a"
-                            android:textColor="#757575"
+                            android:textColor="?android:attr/textColorSecondary"
                             android:textSize="12sp"
                             android:gravity="center"
                             android:layout_marginBottom="6dp" />
@@ -104,7 +104,7 @@
                     android:layout_height="48dp"
                     android:background="@drawable/bg_btn_primary"
                     android:src="@android:drawable/ic_media_previous"
-                    app:tint="#FFFFFF"
+                    app:tint="?attr/colorOnPrimary"
                     android:contentDescription="Ocultar o Mostrar Lista de Contactos" />
 
             </LinearLayout>
@@ -119,7 +119,7 @@
                 android:visibility="gone"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="8dp"
-                android:backgroundTint="#156082">
+                android:backgroundTint="?attr/colorPrimary">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -132,7 +132,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="🚀 Ruta Activa: Nombre"
-                        android:textColor="#FFFFFF"
+                        android:textColor="?attr/colorOnPrimary"
                         android:textSize="18sp"
                         android:textStyle="bold" />
 
@@ -151,7 +151,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="🏁 Finalizar Ruta"
-                        android:textColor="#FFFFFF"
+                        android:textColor="?attr/colorOnPrimary"
                         android:textSize="15sp"
                         android:textStyle="bold"
                         app:backgroundTint="#D32F2F"
@@ -172,9 +172,6 @@
         android:layout_gravity="start"
         android:fitsSystemWindows="true"
         app:headerLayout="@layout/nav_header_main"
-        app:menu="@menu/drawer_menu"
-        android:background="#156082"
-        app:itemTextColor="#FFFFFF"
-        app:itemIconTint="#FFFFFF"/>
+        app:menu="@menu/drawer_menu" />
 
 </androidx.drawerlayout.widget.DrawerLayout>

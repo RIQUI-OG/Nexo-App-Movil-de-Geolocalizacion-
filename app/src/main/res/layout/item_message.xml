@@ -41,10 +41,59 @@
         android:paddingBottom="6dp">
 
         <TextView
+            android:id="@+id/tvSenderName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="?attr/colorPrimary"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:layout_marginBottom="2dp"
+            android:visibility="gone"
+            tools:text="Mamá" />
+
+        <LinearLayout
+            android:id="@+id/replyLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="#1A000000"
+            android:padding="6dp"
+            android:layout_marginBottom="4dp"
+            android:visibility="gone">
+            <View
+                android:layout_width="3dp"
+                android:layout_height="match_parent"
+                android:background="#00BFA6"
+                android:layout_marginEnd="6dp"/>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <TextView
+                    android:id="@+id/tvRepliedName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="?attr/colorPrimary"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    tools:text="Mamá"/>
+                <TextView
+                    android:id="@+id/tvRepliedText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    android:textSize="12sp"
+                    tools:text="Mensaje original..."/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
             android:id="@+id/tvMessageText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#212121"
+            android:textColor="?android:attr/textColorPrimary"
             android:textSize="14sp"
             tools:text="Hola, ¿cómo estás? Este es un mensaje de prueba." />
 
@@ -54,7 +103,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="end"
             android:layout_marginTop="2dp"
-            android:textColor="#757575"
+            android:textColor="?android:attr/textColorSecondary"
             android:textSize="10sp"
             tools:text="10:45 AM" />
 

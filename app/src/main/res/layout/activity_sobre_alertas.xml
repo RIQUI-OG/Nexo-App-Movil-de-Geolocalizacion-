@@ -13,7 +13,7 @@
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@drawable/background_gradient">
+        android:background="?android:attr/colorBackground">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -25,7 +25,7 @@
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:background="@android:color/transparent"
+                android:background="?attr/colorPrimary"
                 android:elevation="4dp"
                 android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
                 app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
@@ -40,7 +40,7 @@
                     android:layout_height="wrap_content"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="6dp"
-                    android:backgroundTint="#FFFFFF"
+                    android:backgroundTint="?attr/colorSurface"
                     android:layout_marginBottom="24dp">
 
                     <LinearLayout
@@ -54,7 +54,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Sobre las Alertas"
-                            android:textColor="#156082"
+                            android:textColor="?attr/colorPrimary"
                             android:textSize="26sp"
                             android:textStyle="bold"
                             android:gravity="center"
@@ -75,7 +75,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="No necesitas abrir la app ni desbloquear tu móvil, solo usa los botones de volumen:"
-                            android:textColor="#156082"
+                            android:textColor="?attr/colorPrimary"
                             android:textSize="15sp"
                             android:textStyle="bold"
                             android:lineSpacingExtra="4dp"
@@ -101,7 +101,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:text="🔕 Alerta Silenciosa: Presiona 3 veces seguidas el botón de Volumen Abajo (V-)."
-                                    android:textColor="#156082"
+                                    android:textColor="?attr/colorPrimary"
                                     android:textSize="15sp"
                                     android:textStyle="bold"
                                     android:layout_marginBottom="12dp" />
@@ -137,7 +137,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:text="🔊 Alerta Sonora: Presiona 3 veces seguidas el botón de Volumen Arriba (V+)."
-                                    android:textColor="#156082"
+                                    android:textColor="?attr/colorPrimary"
                                     android:textSize="15sp"
                                     android:textStyle="bold"
                                     android:layout_marginBottom="12dp" />
@@ -172,9 +172,6 @@
         android:layout_gravity="start"
         android:fitsSystemWindows="true"
         app:headerLayout="@layout/nav_header_main"
-        android:background="#156082"
-        app:menu="@menu/drawer_menu"
-        app:itemTextColor="#FFFFFF"
-        app:itemIconTint="#FFFFFF" />
+        app:menu="@menu/drawer_menu" />
 
 </androidx.drawerlayout.widget.DrawerLayout>

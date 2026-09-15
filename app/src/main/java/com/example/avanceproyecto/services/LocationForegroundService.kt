@@ -25,6 +25,7 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -40,7 +41,7 @@ class LocationForegroundService : Service() {
     private var currentActiveTrip: ActiveTrip? = null
     private val processedAlerts = mutableSetOf<String>()
     private val processedMessages = mutableSetOf<String>()
-    private val chatMessageListeners = mutableMapOf<String, ValueEventListener>()
+    private val chatMessageListeners = mutableMapOf<String, ChildEventListener>()
     private var serviceStartTime = System.currentTimeMillis()
 
     companion object {
@@ -113,9 +114,9 @@ class LocationForegroundService : Service() {
     private fun startLocationTracking() {
         try {
             val locationRequest = LocationRequest.create().apply {
-                interval = 8000
-                fastestInterval = 4000
-                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+                interval = 15000 // Aumentado a 15 segundos para optimizar batería
+                fastestInterval = 10000
+                priority = LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY // Mejor balance batería-GPS
             }
 
             val locationCallback = object : LocationCallback() {
@@ -231,7 +232,7 @@ class LocationForegroundService : Service() {
                                 null
                             } ?: continue
 
-                            val isMyChat = conversation.isGroup || conversation.chatId.contains(userId) || conversation.participants.contains(userId)
+                            val isMyChat = conversation.isGroup || conversation.chatId.contains(userId) || conversation.participants?.contains(userId) == true
                             if (isMyChat) {
                                 attachMessageListenerToChat(conversation.chatId, conversation.title)
                             }
@@ -248,42 +249,48 @@ class LocationForegroundService : Service() {
     private fun attachMessageListenerToChat(chatId: String, chatTitle: String) {
         if (chatMessageListeners.containsKey(chatId)) return
 
-        val listener = object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                for (msgSnapshot in snapshot.children) {
-                    val message = try {
-                        msgSnapshot.getValue(ChatMessage::class.java)
-                    } catch (e: Exception) {
-                        null
-                    } ?: continue
+        val listener = object : ChildEventListener {
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                val message = try {
+                    snapshot.getValue(ChatMessage::class.java)
+                } catch (e: Exception) {
+                    null
+                } ?: return
 
-                    if (message.senderId != userId && message.timestamp >= serviceStartTime) {
-                        if (!processedMessages.contains(message.messageId) && message.messageId.isNotEmpty()) {
-                            processedMessages.add(message.messageId)
+                if (message.senderId != userId && message.timestamp >= serviceStartTime) {
+                    if (!processedMessages.contains(message.messageId) && message.messageId.isNotEmpty()) {
+                        processedMessages.add(message.messageId)
 
-                            val displayTitle = if (chatTitle.isNotEmpty()) chatTitle else message.senderName
-                            val displayText = if (chatTitle.isNotEmpty() && !chatTitle.contains(message.senderName)) {
-                                "${message.senderName}: ${message.text}"
-                            } else {
-                                message.text
-                            }
-
-                            NotificationHelper.showChatNotification(
-                                context = this@LocationForegroundService,
-                                senderName = displayTitle,
-                                messageText = displayText,
-                                chatId = chatId
-                            )
+                        val displayTitle = if (chatTitle.isNotEmpty()) chatTitle else message.senderName
+                        val displayText = if (chatTitle.isNotEmpty() && !chatTitle.contains(message.senderName)) {
+                            "${message.senderName}: ${message.text}"
+                        } else {
+                            message.text
                         }
+
+                        NotificationHelper.showChatNotification(
+                            context = this@LocationForegroundService,
+                            senderName = displayTitle,
+                            messageText = displayText,
+                            chatId = chatId
+                        )
                     }
                 }
             }
 
+            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {}
+            override fun onChildRemoved(snapshot: DataSnapshot) {}
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
             override fun onCancelled(error: DatabaseError) {}
         }
 
+        // Usamos ChildEventListener que es mucho más eficiente que ValueEventListener (no descarga todo el array de mensajes repetidamente)
         chatMessageListeners[chatId] = listener
-        realtimeDatabase.getReference("chat_messages/$chatId").addValueEventListener(listener)
+        realtimeDatabase.getReference("chat_messages/$chatId")
+            .orderByChild("timestamp")
+            .startAt(serviceStartTime.toDouble())
+            .addChildEventListener(listener)
+
     }
 
     private fun listenToIncomingMessagesAndAlerts() {

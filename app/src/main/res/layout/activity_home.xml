@@ -13,13 +13,13 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@drawable/background_gradient">
+        android:background="?android:attr/colorBackground">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@android:color/transparent"
+            android:background="?attr/colorPrimary"
             android:elevation="4dp"
             android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
             app:layout_constraintTop_toTopOf="parent"
@@ -56,7 +56,7 @@
                     android:layout_gravity="center"
                     android:layout_marginTop="8dp"
                     android:text="¡BIENVENIDO!"
-                    android:textColor="#156082"
+                    android:textColor="?attr/colorPrimary"
                     android:textSize="22sp"
                     android:textStyle="bold" />
 
@@ -68,7 +68,7 @@
                     android:layout_marginTop="2dp"
                     android:alpha="0.8"
                     android:text="Mantén a tu familia segura"
-                    android:textColor="#156082"
+                    android:textColor="?attr/colorPrimary"
                     android:textSize="13sp" />
 
                 <!-- Botón de Emergencia Rediseñado (Sin cortes de texto) -->
@@ -101,7 +101,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:text="BOTÓN DE EMERGENCIA"
-                            android:textColor="#FFFFFF"
+                            android:textColor="?attr/colorOnPrimary"
                             android:textSize="18sp"
                             android:textStyle="bold" />
 
@@ -111,7 +111,7 @@
                             android:layout_marginTop="2dp"
                             android:alpha="0.9"
                             android:text="Presiona para alertar a tu familia inmediatamente"
-                            android:textColor="#FFFFFF"
+                            android:textColor="?attr/colorOnPrimary"
                             android:textSize="12sp"
                             android:gravity="center" />
 
@@ -153,7 +153,7 @@
                         android:layout_marginEnd="6dp"
                         app:cardCornerRadius="14dp"
                         app:cardElevation="4dp"
-                        android:backgroundTint="#156082"
+                        android:backgroundTint="?attr/colorPrimary"
                         android:foreground="?attr/selectableItemBackground">
 
                         <LinearLayout
@@ -174,7 +174,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
                                 android:text="Rutas"
-                                android:textColor="#FFFFFF"
+                                android:textColor="?attr/colorOnPrimary"
                                 android:textSize="13sp"
                                 android:textStyle="bold" />
 
@@ -192,7 +192,7 @@
                         android:layout_marginEnd="3dp"
                         app:cardCornerRadius="14dp"
                         app:cardElevation="4dp"
-                        android:backgroundTint="#156082"
+                        android:backgroundTint="?attr/colorPrimary"
                         android:foreground="?attr/selectableItemBackground">
 
                         <LinearLayout
@@ -213,7 +213,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
                                 android:text="Contactos"
-                                android:textColor="#FFFFFF"
+                                android:textColor="?attr/colorOnPrimary"
                                 android:textSize="13sp"
                                 android:textStyle="bold" />
 
@@ -230,7 +230,7 @@
                         android:layout_marginStart="6dp"
                         app:cardCornerRadius="14dp"
                         app:cardElevation="4dp"
-                        android:backgroundTint="#156082"
+                        android:backgroundTint="?attr/colorPrimary"
                         android:foreground="?attr/selectableItemBackground">
 
                         <LinearLayout
@@ -251,7 +251,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
                                 android:text="Chats"
-                                android:textColor="#FFFFFF"
+                                android:textColor="?attr/colorOnPrimary"
                                 android:textSize="13sp"
                                 android:textStyle="bold" />
 
@@ -274,9 +274,6 @@
         android:layout_gravity="start"
         android:fitsSystemWindows="true"
         app:headerLayout="@layout/nav_header_main"
-        android:background="#156082"
-        app:menu="@menu/drawer_menu"
-        app:itemTextColor="#FFFFFF"
-        app:itemIconTint="#FFFFFF"/>
+        app:menu="@menu/drawer_menu" />
 
 </androidx.drawerlayout.widget.DrawerLayout>

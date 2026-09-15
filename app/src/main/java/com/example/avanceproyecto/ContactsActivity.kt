@@ -29,6 +29,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -246,9 +247,10 @@ class ContactsActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             .document(request.connectionId)
             .update("status", "accepted")
             .addOnSuccessListener {
-                createReverseAcceptedConnection(request.connectedUserId, request.type)
+                val reverseType = if (request.type == "Niño") "Tutor" else request.type
+                createReverseAcceptedConnection(request.connectedUserId, reverseType)
 
-                if (request.type.contains("Familia", ignoreCase = true) || request.type.contains("family", ignoreCase = true)) {
+                if (request.type.contains("Familia", ignoreCase = true) || request.type.contains("family", ignoreCase = true) || request.type == "Niño" || reverseType == "Tutor") {
                     syncFamilyGroupChat(request.connectedUserId, request.connectedUserName)
                 }
 
@@ -292,40 +294,45 @@ class ContactsActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     private fun syncFamilyGroupChat(connectedUserId: String, connectedUserName: String) {
         if (userId.isEmpty() || connectedUserId.isEmpty()) return
 
-        val groupId = "group_family_$userId"
-        val ref = realtimeDatabase.getReference("chat_conversations/$groupId")
+        // Sincronizar el grupo del usuario A (quien acepta)
+        val groupIdA = "group_family_$userId"
+        val refA = realtimeDatabase.getReference("chat_conversations/$groupIdA")
+        syncGroup(refA, userId, connectedUserId, "👨‍👩‍👧‍👦 Familia de $myUserName", connectedUserName)
 
+        // Sincronizar el grupo del usuario B (quien fue aceptado)
+        val groupIdB = "group_family_$connectedUserId"
+        val refB = realtimeDatabase.getReference("chat_conversations/$groupIdB")
+        syncGroup(refB, connectedUserId, userId, "👨‍👩‍👧‍👦 Familia de $connectedUserName", myUserName)
+    }
+
+    private fun syncGroup(ref: DatabaseReference, ownerId: String, newMemberId: String, groupTitle: String, newMemberName: String) {
         ref.get().addOnSuccessListener { snapshot ->
-            val existingParticipants = mutableListOf(userId, connectedUserId)
-
             if (snapshot.exists()) {
                 val conversation = snapshot.getValue(ChatConversation::class.java)
                 if (conversation != null) {
-                    val currentList = conversation.participants.toMutableList()
-                    if (!currentList.contains(connectedUserId)) {
-                        currentList.add(connectedUserId)
+                    val currentList = conversation.participants?.toMutableList() ?: mutableListOf()
+                    if (!currentList.contains(newMemberId)) {
+                        currentList.add(newMemberId)
                     }
-                    if (!currentList.contains(userId)) {
-                        currentList.add(userId)
+                    if (!currentList.contains(ownerId)) {
+                        currentList.add(ownerId)
                     }
 
                     ref.child("participants").setValue(currentList)
-                    ref.child("lastMessage").setValue("👋 $connectedUserName se unió al Chat Familiar")
+                    ref.child("lastMessage").setValue("👋 $newMemberName se unió al Chat Familiar")
                     ref.child("lastMessageTime").setValue(System.currentTimeMillis())
-                    return@addOnSuccessListener
                 }
+            } else {
+                val newFamilyGroup = ChatConversation(
+                    chatId = ref.key ?: "",
+                    title = groupTitle,
+                    isGroup = true,
+                    participants = listOf(ownerId, newMemberId),
+                    lastMessage = "👋 Chat Familiar creado con $newMemberName",
+                    lastMessageTime = System.currentTimeMillis()
+                )
+                ref.setValue(newFamilyGroup)
             }
-
-            val newFamilyGroup = ChatConversation(
-                chatId = groupId,
-                title = "👨‍👩‍👧‍👦 Chat Familiar",
-                isGroup = true,
-                participants = existingParticipants,
-                lastMessage = "👋 Chat Familiar creado con $connectedUserName",
-                lastMessageTime = System.currentTimeMillis()
-            )
-
-            ref.setValue(newFamilyGroup)
         }
     }
 
@@ -367,6 +374,7 @@ class ContactsActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             val category = when (selectedCategoryId) {
                 R.id.rbFamilia -> "Familia"
                 R.id.rbAmigos -> "Amigos"
+                R.id.rbNino -> "Niño"
                 R.id.rbOtros -> "Otros"
                 else -> ""
             }

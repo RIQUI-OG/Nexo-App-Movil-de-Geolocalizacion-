@@ -69,6 +69,7 @@ dependencies {
 
     // RecyclerView (familiares, chats)
     implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
     // Glide (imagenes de perfil)
     implementation("com.github.bumptech.glide:glide:4.16.0")
@@ -78,3 +79,6 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 }
+
+
+

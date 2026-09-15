@@ -7,6 +7,7 @@ import android.view.View
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
@@ -16,6 +17,7 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.avanceproyecto.adapters.ConversationsAdapter
 import com.example.avanceproyecto.models.ChatConversation
 import com.example.avanceproyecto.models.UserConnection
@@ -32,10 +34,11 @@ class ChatListActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var rvConversations: RecyclerView
-    private lateinit var emptyStateChatList: LinearLayout
+    private lateinit var emptyStateChatList: View
     private lateinit var fabNewChat: FloatingActionButton
+    private lateinit var swipeRefreshChatList: SwipeRefreshLayout
 
-    private lateinit var auth: FirebaseAuth
+    private val auth = FirebaseAuth.getInstance()
     private lateinit var realtimeDatabase: FirebaseDatabase
     private lateinit var firestore: FirebaseFirestore
 
@@ -49,7 +52,6 @@ class ChatListActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat_list)
 
-        auth = FirebaseAuth.getInstance()
         realtimeDatabase = FirebaseDatabase.getInstance()
         firestore = FirebaseFirestore.getInstance()
 
@@ -95,17 +97,35 @@ class ChatListActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         rvConversations = findViewById(R.id.rvConversations)
         emptyStateChatList = findViewById(R.id.emptyStateChatList)
         fabNewChat = findViewById(R.id.fabNewChat)
+        swipeRefreshChatList = findViewById(R.id.swipeRefreshChatList)
 
         rvConversations.layoutManager = LinearLayoutManager(this)
 
-        adapter = ConversationsAdapter(conversationsList) { conversation ->
-            openChatActivity(conversation.chatId, conversation.title, conversation.isGroup)
-        }
+        adapter = ConversationsAdapter(
+            conversationsList = conversationsList,
+            currentUserId = userId,
+            onConversationClick = { conversation ->
+                openChatActivity(conversation.chatId, conversation.title, conversation.isGroup)
+            },
+            onConversationLongClick = { conversation ->
+                showDeleteConversationDialog(conversation)
+            },
+            resolveContactName = { id ->
+                if (id == userId) "Tú"
+                else userContactsList.find { it.connectedUserId == id }?.connectedUserName ?: "Usuario"
+            }
+        )
 
         rvConversations.adapter = adapter
 
         fabNewChat.setOnClickListener {
             showNewChatOrGroupOptions()
+        }
+
+        swipeRefreshChatList.setOnRefreshListener {
+            loadContacts()
+            listenToConversations()
+            swipeRefreshChatList.isRefreshing = false
         }
     }
 
@@ -131,6 +151,7 @@ class ChatListActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                     val connection = doc.toObject(UserConnection::class.java)
                     userContactsList.add(connection)
                 }
+                adapter.notifyDataSetChanged()
             }
     }
 
@@ -150,7 +171,12 @@ class ChatListActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                         }
 
                         if (conversation != null) {
-                            if (conversation.isGroup || conversation.chatId.contains(userId)) {
+                            // If it's a group, we check if userId is in participants OR if participants is empty (fallback).
+                            // If it's individual, we check if chatId contains userId.
+                            val isMyGroup = conversation.isGroup && (conversation.participants?.contains(userId) == true || conversation.participants.isNullOrEmpty())
+                            val isMyIndividualChat = !conversation.isGroup && conversation.chatId.contains(userId)
+
+                            if (isMyGroup || isMyIndividualChat) {
                                 conversationsList.add(conversation)
                             }
                         }
@@ -255,6 +281,19 @@ class ChatListActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                     .addOnFailureListener { e ->
                         Toast.makeText(this, "❌ Error al crear grupo: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun showDeleteConversationDialog(conversation: ChatConversation) {
+        AlertDialog.Builder(this)
+            .setTitle("Borrar conversación")
+            .setMessage("¿Estás seguro de que deseas borrar esta conversación para siempre?")
+            .setPositiveButton("Borrar") { _, _ ->
+                realtimeDatabase.getReference("chat_conversations/${conversation.chatId}").removeValue()
+                realtimeDatabase.getReference("chat_messages/${conversation.chatId}").removeValue()
+                Toast.makeText(this, "Conversación borrada", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Cancelar", null)
             .show()

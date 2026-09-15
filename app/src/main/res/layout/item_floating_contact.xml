@@ -16,7 +16,7 @@
         android:layout_height="42dp"
         app:cardCornerRadius="21dp"
         app:cardElevation="2dp"
-        android:backgroundTint="#156082">
+        android:backgroundTint="?attr/colorPrimary">
 
         <TextView
             android:id="@+id/tvFloatingAvatar"
@@ -24,7 +24,7 @@
             android:layout_height="match_parent"
             android:gravity="center"
             android:text="👤"
-            android:textColor="#FFFFFF"
+            android:textColor="?attr/colorOnPrimary"
             android:textSize="18sp" />
 
     </androidx.cardview.widget.CardView>
@@ -35,7 +35,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:text="Nombre"
-        android:textColor="#212121"
+        android:textColor="?android:attr/textColorPrimary"
         android:textSize="11sp"
         android:textStyle="bold"
         android:maxLines="1"
