@@ -13,7 +13,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="?android:attr/colorBackground">
+        android:background="#EBEBEB">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
@@ -71,59 +71,11 @@
                     android:textColor="?attr/colorPrimary"
                     android:textSize="13sp" />
 
-                <!-- Botón de Emergencia Rediseñado (Sin cortes de texto) -->
-                <androidx.cardview.widget.CardView
-                    android:id="@+id/cardEmergency"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="6dp"
-                    android:backgroundTint="#E53935"
-                    android:foreground="?attr/selectableItemBackground">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="🚨"
-                            android:textSize="32sp" />
-
-                        <TextView
-                            android:id="@+id/tvEmergencyTitle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="BOTÓN DE EMERGENCIA"
-                            android:textColor="?attr/colorOnPrimary"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:alpha="0.9"
-                            android:text="Presiona para alertar a tu familia inmediatamente"
-                            android:textColor="?attr/colorOnPrimary"
-                            android:textSize="12sp"
-                            android:gravity="center" />
-
-                    </LinearLayout>
-
-                </androidx.cardview.widget.CardView>
-
                 <!-- Sección del Mapa en Vivo -->
                 <androidx.cardview.widget.CardView
                     android:id="@+id/cardMapContainer"
                     android:layout_width="match_parent"
-                    android:layout_height="200dp"
+                    android:layout_height="350dp"
                     android:layout_marginTop="16dp"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="6dp">
@@ -260,6 +212,67 @@
                     </androidx.cardview.widget.CardView>
 
                 </LinearLayout>
+
+                <!-- Botón de Emergencia Rediseñado (Sin cortes de texto) -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardEmergency"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="6dp"
+                    android:backgroundTint="#E53935"
+                    android:foreground="?attr/selectableItemBackground">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🚨"
+                            android:textSize="32sp" />
+
+                        <TextView
+                            android:id="@+id/tvEmergencyTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="BOTÓN DE EMERGENCIA"
+                            android:textColor="?attr/colorOnPrimary"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:alpha="0.9"
+                            android:text="Presiona para alertar a tu familia inmediatamente"
+                            android:textColor="?attr/colorOnPrimary"
+                            android:textSize="12sp"
+                            android:gravity="center" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+                <!-- Botón para apagar la alarma si está sonando -->
+                <Button
+                    android:id="@+id/btnStopAlarm"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:layout_marginTop="16dp"
+                    android:backgroundTint="#F57C00"
+                    android:text="🔇 APAGAR SIRENA DE EMERGENCIA"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold"
+                    android:visibility="visible"
+                    android:textSize="16sp" />
 
             </LinearLayout>
 

@@ -24,6 +24,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import com.example.avanceproyecto.models.ChatConversation
 import com.example.avanceproyecto.models.ChatMessage
 import com.example.avanceproyecto.models.Emergency
 import com.example.avanceproyecto.services.LocationForegroundService
@@ -221,6 +222,12 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
             intent.putExtra("USER_ID", userId)
             startActivity(intent)
         }
+
+        val btnStopAlarm = findViewById<android.widget.Button>(R.id.btnStopAlarm)
+        btnStopAlarm?.setOnClickListener {
+            com.example.avanceproyecto.services.LocationForegroundService.stopAlarm()
+            Toast.makeText(this, "Sirena apagada", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun showEmergencyConfirmation() {
@@ -292,30 +299,63 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
     private fun sendFamilyGroupEmergencyMessage(latitude: Double, longitude: Double) {
         if (userId.isEmpty()) return
 
+        // 1. Enviar a todos los grupos personalizados donde el usuario sea participante
+        realtimeDatabase.getReference("chat_conversations")
+            .addListenerForSingleValueEvent(object : com.google.firebase.database.ValueEventListener {
+                override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
+                    for (itemSnapshot in snapshot.children) {
+                        val conversation = try {
+                            itemSnapshot.getValue(ChatConversation::class.java)
+                        } catch (e: Exception) {
+                            null
+                        }
+
+                        if (conversation != null && conversation.isGroup) {
+                            val participants = conversation.participants ?: emptyList()
+                            if (participants.contains(userId)) {
+                                val groupId = conversation.chatId
+                                if (groupId.isNotEmpty() && groupId != "group_family_$userId") {
+                                    sendEmergencyMessageToChat(groupId, latitude, longitude)
+                                }
+                            }
+                        }
+                    }
+                }
+                override fun onCancelled(error: com.google.firebase.database.DatabaseError) {}
+            })
+
+        // 2. Enviar también al grupo familiar legacy por defecto
         val familyGroupId = "group_family_$userId"
-        val msgRef = realtimeDatabase.getReference("chat_messages/$familyGroupId").push()
+        sendEmergencyMessageToChat(familyGroupId, latitude, longitude, true)
+    }
+
+    private fun sendEmergencyMessageToChat(chatId: String, latitude: Double, longitude: Double, isLegacyFamily: Boolean = false) {
+        val msgRef = realtimeDatabase.getReference("chat_messages/$chatId").push()
         val msgId = msgRef.key ?: System.currentTimeMillis().toString()
 
         val emergencyMessage = ChatMessage(
             messageId = msgId,
-            chatId = familyGroupId,
+            chatId = chatId,
             senderId = "SYSTEM_EMERGENCY",
             senderName = "🚨 ALERTA DE EMERGENCIA",
-            text = "🚨 ¡ATENCIÓN FAMILIA! $userName ha activado la alerta de emergencia.\nUbicación GPS: Lat $latitude, Lon $longitude",
+            text = "🚨 ¡ATENCIÓN! $userName ha activado la alerta de emergencia.\nUbicación GPS: Lat $latitude, Lon $longitude",
             timestamp = System.currentTimeMillis()
         )
 
         msgRef.setValue(emergencyMessage)
 
-        val conversationUpdate = mapOf(
-            "chatId" to familyGroupId,
+        val conversationUpdate = mutableMapOf<String, Any>(
+            "chatId" to chatId,
             "lastMessage" to "🚨 ¡ALERTA DE EMERGENCIA ACTIVADA POR $userName!",
-            "lastMessageTime" to System.currentTimeMillis(),
-            "title" to "👨‍👩‍👧‍👦 Familia de $userName",
-            "isGroup" to true
+            "lastMessageTime" to System.currentTimeMillis()
         )
 
-        realtimeDatabase.getReference("chat_conversations/$familyGroupId")
+        if (isLegacyFamily) {
+            conversationUpdate["title"] = "👨‍👩‍👧‍👦 Familia de $userName"
+            conversationUpdate["isGroup"] = true
+        }
+
+        realtimeDatabase.getReference("chat_conversations/$chatId")
             .updateChildren(conversationUpdate)
     }
 

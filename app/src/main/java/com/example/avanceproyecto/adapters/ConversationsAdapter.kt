@@ -51,9 +51,10 @@ class ConversationsAdapter(
             holder.tvUnreadCount.visibility = View.GONE
         }
 
-        if (item.isGroup && !item.participants.isNullOrEmpty()) {
+        val participantsList = item.participants
+        if (item.isGroup && !participantsList.isNullOrEmpty()) {
             holder.tvGroupMembers.visibility = View.VISIBLE
-            val memberNames = item.participants.map { resolveContactName(it) }.joinToString(", ")
+            val memberNames = participantsList.map { resolveContactName(it) }.joinToString(", ")
             holder.tvGroupMembers.text = memberNames
         } else {
             holder.tvGroupMembers.visibility = View.GONE

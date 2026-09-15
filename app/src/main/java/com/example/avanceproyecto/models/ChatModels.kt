@@ -21,13 +21,13 @@ data class ChatMessage(
 @Keep
 @IgnoreExtraProperties
 data class ChatConversation(
-    val chatId: String = "",
-    val title: String = "",
-    val isGroup: Boolean = false,
-    val participants: List<String>? = null,
-    val lastMessage: String = "",
-    val lastMessageTime: Long = System.currentTimeMillis(),
-    val unreadCounts: Map<String, Int> = emptyMap()
+    var chatId: String = "",
+    var title: String = "",
+    var isGroup: Boolean = false,
+    var participants: List<String>? = null,
+    var lastMessage: String = "",
+    var lastMessageTime: Long = 0L,
+    var unreadCounts: Map<String, Int> = HashMap()
 ) {
-    constructor() : this("", "", false, null, "", System.currentTimeMillis(), emptyMap())
+    constructor() : this("", "", false, null, "", 0L, HashMap())
 }

@@ -63,6 +63,7 @@ class ChatActivity : AppCompatActivity() {
         initViews()
         setupChatId()
         loadMyUserName()
+        loadGroupParticipants()
         setupRecyclerView()
 
         if (contactId.isEmpty() && chatId.isEmpty() && !isGroup) {
@@ -213,6 +214,33 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
+    private fun loadGroupParticipants() {
+        if (!isGroup || chatId.isEmpty()) return
+
+        firestore.collection("connections")
+            .whereEqualTo("userId", myUserId)
+            .whereEqualTo("status", "accepted")
+            .get()
+            .addOnSuccessListener { documents ->
+                val contactsMap = documents.associate {
+                    it.getString("connectedUserId") to it.getString("connectedUserName")
+                }
+
+                realtimeDatabase.getReference("chat_conversations/$chatId/participants")
+                    .addValueEventListener(object : ValueEventListener {
+                        override fun onDataChange(snapshot: DataSnapshot) {
+                            val participantIds = snapshot.children.mapNotNull { it.getValue(String::class.java) }
+                            val names = participantIds.map { id ->
+                                if (id == myUserId) "Tú"
+                                else contactsMap[id] ?: "Usuario"
+                            }
+                            tvChatStatus.text = names.joinToString(", ")
+                        }
+                        override fun onCancelled(error: DatabaseError) {}
+                    })
+            }
+    }
+
     private fun setupRecyclerView() {
         rvMessages.layoutManager = LinearLayoutManager(this).apply {
             stackFromEnd = true
@@ -283,7 +311,7 @@ class ChatActivity : AppCompatActivity() {
             .addOnSuccessListener {
                 etMessage.setText("")
 
-                val conversationData = mapOf(
+                val conversationData = mapOf<String, Any>(
                     "chatId" to chatId,
                     "lastMessage" to text,
                     "lastMessageTime" to System.currentTimeMillis(),
@@ -292,7 +320,7 @@ class ChatActivity : AppCompatActivity() {
                 )
 
                 realtimeDatabase.getReference("chat_conversations/$chatId")
-                    .setValue(conversationData)
+                    .updateChildren(conversationData)
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "❌ Error al enviar mensaje: ${e.message}", Toast.LENGTH_SHORT).show()

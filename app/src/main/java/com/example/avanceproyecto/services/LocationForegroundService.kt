@@ -6,15 +6,22 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.location.Location
+import android.media.AudioManager
+import android.media.MediaPlayer
+import android.media.RingtoneManager
 import android.os.IBinder
 import android.os.Looper
+import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.media.VolumeProviderCompat
 import com.example.avanceproyecto.HomeActivity
 import com.example.avanceproyecto.R
 import com.example.avanceproyecto.models.ActiveTrip
 import com.example.avanceproyecto.models.ChatConversation
 import com.example.avanceproyecto.models.ChatMessage
+import com.example.avanceproyecto.models.Emergency
 import com.example.avanceproyecto.models.RouteAlert
 import com.example.avanceproyecto.utils.NotificationHelper
 import com.example.avanceproyecto.utils.RouteTrackingHelper
@@ -24,41 +31,62 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.firestore.FirebaseFirestore
 
 class LocationForegroundService : Service() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var realtimeDatabase: FirebaseDatabase
+    private lateinit var firestore: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
 
     private var userId: String = ""
+    private var userName: String = "Usuario"
     private var currentActiveTrip: ActiveTrip? = null
     private val processedAlerts = mutableSetOf<String>()
     private val processedMessages = mutableSetOf<String>()
     private val chatMessageListeners = mutableMapOf<String, ChildEventListener>()
     private var serviceStartTime = System.currentTimeMillis()
 
+    private var mediaSession: MediaSessionCompat? = null
+    private var mediaPlayer: MediaPlayer? = null
+    private var volumeUpCount = 0
+    private var volumeDownCount = 0
+    private var lastVolumeUpTime = 0L
+    private var lastVolumeDownTime = 0L
+
     companion object {
         private const val TAG = "LocationService"
         private const val SERVICE_NOTIFICATION_ID = 9901
+
+        @SuppressLint("StaticFieldLeak")
+        var instance: LocationForegroundService? = null
+
+        fun stopAlarm() {
+            instance?.stopLoudAlarm()
+        }
     }
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         auth = FirebaseAuth.getInstance()
         realtimeDatabase = FirebaseDatabase.getInstance()
+        firestore = FirebaseFirestore.getInstance()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         userId = auth.currentUser?.uid ?: ""
         serviceStartTime = System.currentTimeMillis()
 
         NotificationHelper.createNotificationChannels(this)
+        setupVolumeInterception()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -68,6 +96,8 @@ class LocationForegroundService : Service() {
         } else if (userId.isEmpty()) {
             userId = auth.currentUser?.uid ?: ""
         }
+
+        fetchUserName()
 
         try {
             startForeground(SERVICE_NOTIFICATION_ID, createPermanentNotification())
@@ -81,6 +111,219 @@ class LocationForegroundService : Service() {
         listenToIncomingChatMessages()
 
         return START_STICKY
+    }
+
+    private fun fetchUserName() {
+        if (userId.isEmpty()) return
+        firestore.collection("users").document(userId).get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    userName = doc.getString("name") ?: "Usuario"
+                }
+            }
+    }
+
+    private fun setupVolumeInterception() {
+        mediaSession = MediaSessionCompat(this, "NexoEmergencySession")
+        mediaSession?.setFlags(
+            MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or
+            MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS
+        )
+        mediaSession?.setPlaybackState(
+            PlaybackStateCompat.Builder()
+                .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
+                .build()
+        )
+
+        val volumeProvider = object : VolumeProviderCompat(VOLUME_CONTROL_RELATIVE, 100, 50) {
+            override fun onAdjustVolume(direction: Int) {
+                handleVolumeButtonPress(direction)
+            }
+        }
+
+        mediaSession?.setPlaybackToRemote(volumeProvider)
+        mediaSession?.isActive = true
+    }
+
+    private fun handleVolumeButtonPress(direction: Int) {
+        val currentTime = System.currentTimeMillis()
+
+        if (direction == 1) { // Volume Up
+            if (currentTime - lastVolumeUpTime > 3000) volumeUpCount = 0
+            volumeUpCount++
+            lastVolumeUpTime = currentTime
+
+            if (volumeUpCount == 3) {
+                volumeUpCount = 0
+                triggerEmergencyAlert(silent = false)
+            }
+        } else if (direction == -1) { // Volume Down
+            if (currentTime - lastVolumeDownTime > 3000) volumeDownCount = 0
+            volumeDownCount++
+            lastVolumeDownTime = currentTime
+
+            if (volumeDownCount == 3) {
+                volumeDownCount = 0
+                triggerEmergencyAlert(silent = true)
+            }
+        }
+    }
+
+    private fun playLoudAlarm() {
+        if (mediaPlayer?.isPlaying == true) return
+
+        try {
+            val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+
+            mediaPlayer = MediaPlayer().apply {
+                setDataSource(this@LocationForegroundService, alarmUri)
+                setAudioStreamType(AudioManager.STREAM_ALARM)
+                isLooping = true
+                prepare()
+                start()
+            }
+
+            val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+            val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, maxVolume, 0)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error playing alarm", e)
+        }
+    }
+
+    fun stopLoudAlarm() {
+        try {
+            if (mediaPlayer?.isPlaying == true) {
+                mediaPlayer?.stop()
+                mediaPlayer?.release()
+                mediaPlayer = null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping alarm", e)
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun triggerEmergencyAlert(silent: Boolean) {
+        if (!silent) {
+            playLoudAlarm()
+        }
+
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            location?.let {
+                saveEmergencyToFirebase(it.latitude, it.longitude)
+                sendNotificationToFamily(it.latitude, it.longitude)
+                sendEmergencyMessageToAllGroups(it.latitude, it.longitude)
+                NotificationHelper.showSecurityAlertNotification(
+                    this,
+                    if (silent) "🚨 Alerta Silenciosa Enviada" else "🚨 Alerta Sonora Enviada",
+                    "Tu ubicación GPS ha sido compartida con tu familia."
+                )
+            }
+        }
+    }
+
+    private fun saveEmergencyToFirebase(latitude: Double, longitude: Double) {
+        val emergencyId = firestore.collection("emergencies").document().id
+        val emergency = Emergency(
+            emergencyId = emergencyId,
+            userId = userId,
+            userName = userName,
+            latitude = latitude,
+            longitude = longitude,
+            timestamp = Timestamp.now(),
+            isActive = true,
+            audioUrl = ""
+        )
+
+        firestore.collection("emergencies").document(emergencyId).set(emergency)
+
+        val locationData = mapOf(
+            "latitude" to latitude,
+            "longitude" to longitude,
+            "timestamp" to System.currentTimeMillis(),
+            "isEmergency" to true
+        )
+        realtimeDatabase.getReference("locations/$userId").setValue(locationData)
+    }
+
+    private fun sendNotificationToFamily(latitude: Double, longitude: Double) {
+        firestore.collection("connections")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("type", "family")
+            .whereEqualTo("status", "accepted")
+            .get()
+            .addOnSuccessListener { documents ->
+                for (document in documents) {
+                    val connectedUserId = document.getString("connectedUserId") ?: continue
+                    val notificationData = mapOf(
+                        "fromUserId" to userId,
+                        "fromUserName" to userName,
+                        "toUserId" to connectedUserId,
+                        "type" to "emergency",
+                        "latitude" to latitude,
+                        "longitude" to longitude,
+                        "timestamp" to Timestamp.now(),
+                        "read" to false
+                    )
+                    firestore.collection("notifications").add(notificationData)
+                }
+            }
+    }
+
+    private fun sendEmergencyMessageToAllGroups(latitude: Double, longitude: Double) {
+        realtimeDatabase.getReference("chat_conversations")
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    for (itemSnapshot in snapshot.children) {
+                        val conversation = try {
+                            itemSnapshot.getValue(ChatConversation::class.java)
+                        } catch (e: Exception) {
+                            null
+                        }
+                        if (conversation != null && conversation.isGroup) {
+                            val participants = conversation.participants ?: emptyList()
+                            if (participants.contains(userId)) {
+                                val groupId = conversation.chatId
+                                if (groupId.isNotEmpty() && groupId != "group_family_$userId") {
+                                    sendEmergencyMessageToChat(groupId, latitude, longitude)
+                                }
+                            }
+                        }
+                    }
+                }
+                override fun onCancelled(error: DatabaseError) {}
+            })
+
+        val familyGroupId = "group_family_$userId"
+        sendEmergencyMessageToChat(familyGroupId, latitude, longitude, true)
+    }
+
+    private fun sendEmergencyMessageToChat(chatId: String, latitude: Double, longitude: Double, isLegacyFamily: Boolean = false) {
+        val msgRef = realtimeDatabase.getReference("chat_messages/$chatId").push()
+        val msgId = msgRef.key ?: System.currentTimeMillis().toString()
+
+        val emergencyMessage = ChatMessage(
+            messageId = msgId,
+            chatId = chatId,
+            senderId = "SYSTEM_EMERGENCY",
+            senderName = "🚨 ALERTA DE EMERGENCIA",
+            text = "🚨 ¡ATENCIÓN! $userName ha activado la alerta de emergencia.\nUbicación GPS: Lat $latitude, Lon $longitude",
+            timestamp = System.currentTimeMillis()
+        )
+        msgRef.setValue(emergencyMessage)
+
+        val conversationUpdate = mutableMapOf<String, Any>(
+            "chatId" to chatId,
+            "lastMessage" to "🚨 ¡ALERTA DE EMERGENCIA ACTIVADA POR $userName!",
+            "lastMessageTime" to System.currentTimeMillis()
+        )
+        if (isLegacyFamily) {
+            conversationUpdate["title"] = "👨‍👩‍👧‍👦 Familia de $userName"
+            conversationUpdate["isGroup"] = true
+        }
+        realtimeDatabase.getReference("chat_conversations/$chatId").updateChildren(conversationUpdate)
     }
 
     private fun createPermanentNotification(): Notification {
@@ -114,9 +357,9 @@ class LocationForegroundService : Service() {
     private fun startLocationTracking() {
         try {
             val locationRequest = LocationRequest.create().apply {
-                interval = 15000 // Aumentado a 15 segundos para optimizar batería
+                interval = 15000 
                 fastestInterval = 10000
-                priority = LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY // Mejor balance batería-GPS
+                priority = LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY 
             }
 
             val locationCallback = object : LocationCallback() {
@@ -284,7 +527,6 @@ class LocationForegroundService : Service() {
             override fun onCancelled(error: DatabaseError) {}
         }
 
-        // Usamos ChildEventListener que es mucho más eficiente que ValueEventListener (no descarga todo el array de mensajes repetidamente)
         chatMessageListeners[chatId] = listener
         realtimeDatabase.getReference("chat_messages/$chatId")
             .orderByChild("timestamp")
@@ -338,6 +580,8 @@ class LocationForegroundService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        mediaPlayer?.release()
+        mediaSession?.release()
         Log.d(TAG, "LocationForegroundService detenido")
     }
 }

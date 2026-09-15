@@ -91,7 +91,7 @@ class LoginActivity : AppCompatActivity() {
                 if (document.exists()) {
                     val userName = document.getString("name") ?: "Usuario"
 
-                    Toast.makeText(this, "✅ Bienvenido $userName", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, " Bienvenido $userName", Toast.LENGTH_SHORT).show()
 
                     val intent = Intent(this, HomeActivity::class.java)
                     intent.putExtra("USER_NAME", userName)

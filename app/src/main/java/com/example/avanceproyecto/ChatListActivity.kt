@@ -167,6 +167,7 @@ class ChatListActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                         val conversation = try {
                             itemSnapshot.getValue(ChatConversation::class.java)
                         } catch (e: Exception) {
+                            android.util.Log.e("ChatListActivity", "Error parsing conversation: ${e.message}", e)
                             null
                         }
 

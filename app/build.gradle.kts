@@ -62,6 +62,9 @@ dependencies {
     implementation("com.google.firebase:firebase-database-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
 
+    // Media & Audio (Session, Volume, etc)
+    implementation("androidx.media:media:1.7.0")
+
     // Google Maps & Location
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.1.0")
