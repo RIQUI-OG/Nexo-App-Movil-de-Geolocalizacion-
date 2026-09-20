@@ -91,9 +91,9 @@ class ConfiguracionActivity : AppCompatActivity(), NavigationView.OnNavigationIt
         val devicePolicyManager = getSystemService(DEVICE_POLICY_SERVICE) as DevicePolicyManager
         val adminComponent = ComponentName(this, AdminReceiver::class.java)
         if (devicePolicyManager.isAdminActive(adminComponent)) {
-            btnParentalMode.text = "🛡️ Desactivar Modo Parental"
+            btnParentalMode.text = "Desactivar Modo Parental"
         } else {
-            btnParentalMode.text = "🛡️ Activar Modo Parental"
+            btnParentalMode.text = "Activar Modo Parental"
         }
     }
 
@@ -196,9 +196,9 @@ class ConfiguracionActivity : AppCompatActivity(), NavigationView.OnNavigationIt
         val isDarkModeOn = sharedPrefs.getBoolean("DARK_MODE", false)
         
         if (isDarkModeOn) {
-            btnDarkMode.text = "☀️ Desactivar Modo Nocturno"
+            btnDarkMode.text = "Desactivar Modo Nocturno"
         } else {
-            btnDarkMode.text = "🌙 Activar Modo Nocturno"
+            btnDarkMode.text = "Activar Modo Nocturno"
         }
     }
 
@@ -218,7 +218,9 @@ class ConfiguracionActivity : AppCompatActivity(), NavigationView.OnNavigationIt
         }
 
         btnSupportHelp.setOnClickListener {
-            Toast.makeText(this, "🎧 Soporte y Ayuda próximamente", Toast.LENGTH_SHORT).show()
+            val intent = Intent(this, SoporteActivity::class.java)
+            intent.putExtra("USER_ID", userId)
+            startActivity(intent)
         }
 
         btnLogoutSettings.setOnClickListener {
