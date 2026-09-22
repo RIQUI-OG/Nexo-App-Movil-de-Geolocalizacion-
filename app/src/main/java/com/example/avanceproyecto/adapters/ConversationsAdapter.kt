@@ -3,8 +3,10 @@ package com.example.avanceproyecto.adapters
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.avanceproyecto.R
 import com.example.avanceproyecto.models.ChatConversation
 import java.text.SimpleDateFormat
@@ -22,6 +24,7 @@ class ConversationsAdapter(
     private val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
 
     class ConversationViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val imgConversationAvatar: ImageView = itemView.findViewById(R.id.imgConversationAvatar)
         val tvAvatarIcon: TextView = itemView.findViewById(R.id.tvAvatarIcon)
         val tvConversationTitle: TextView = itemView.findViewById(R.id.tvConversationTitle)
         val tvConversationTime: TextView = itemView.findViewById(R.id.tvConversationTime)
@@ -38,11 +41,39 @@ class ConversationsAdapter(
     override fun onBindViewHolder(holder: ConversationViewHolder, position: Int) {
         val item = conversationsList[position]
 
-        holder.tvConversationTitle.text = item.title.ifEmpty { "Chat" }
+        val titleToDisplay = if (!item.isGroup) {
+            val otherUserId = item.participants?.find { it != currentUserId }
+                ?: item.chatId.replace("chat_", "").replace("_", "").replace(currentUserId, "")
+            val resolvedName = resolveContactName(otherUserId)
+            if (resolvedName.isNotEmpty() && resolvedName != "Usuario") resolvedName else item.title
+        } else {
+            item.title
+        }
+
+        holder.tvConversationTitle.text = titleToDisplay.ifEmpty { "Chat" }
         holder.tvLastMessage.text = item.lastMessage.ifEmpty { "Sin mensajes aún" }
         holder.tvConversationTime.text = if (item.lastMessageTime > 0) timeFormat.format(Date(item.lastMessageTime)) else ""
-        holder.tvAvatarIcon.text = if (item.isGroup) "👥" else "👤"
-        
+
+        if (item.isGroup) {
+            holder.imgConversationAvatar.visibility = View.GONE
+            holder.tvAvatarIcon.visibility = View.VISIBLE
+            holder.tvAvatarIcon.text = "👨‍👩‍👧‍👦"
+        } else {
+            holder.tvAvatarIcon.visibility = View.GONE
+            holder.imgConversationAvatar.visibility = View.VISIBLE
+
+            if (item.photoUrl.isNotEmpty()) {
+                Glide.with(holder.itemView.context)
+                    .load(item.photoUrl)
+                    .placeholder(R.drawable.ic_person)
+                    .error(R.drawable.ic_person)
+                    .circleCrop()
+                    .into(holder.imgConversationAvatar)
+            } else {
+                holder.imgConversationAvatar.setImageResource(R.drawable.ic_person)
+            }
+        }
+
         val unreadCount = item.unreadCounts[currentUserId] ?: 0
         if (unreadCount > 0) {
             holder.tvUnreadCount.visibility = View.VISIBLE
@@ -61,7 +92,8 @@ class ConversationsAdapter(
         }
 
         holder.itemView.setOnClickListener {
-            onConversationClick(item)
+            val finalConversation = item.copy(title = titleToDisplay)
+            onConversationClick(finalConversation)
         }
 
         holder.itemView.setOnLongClickListener {

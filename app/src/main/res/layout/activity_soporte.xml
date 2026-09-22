@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawer_layout_soporte"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    tools:openDrawer="start"
+    tools:context=".SoporteActivity">
+
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="?android:attr/colorBackground">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <!-- Toolbar con menú hamburguesa -->
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbarSoporte"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="#156082"
+                android:elevation="4dp"
+                app:title="Soporte y Ayuda"
+                app:titleTextColor="#FFFFFF"
+                android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+                app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="20dp"
+                android:fillViewport="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal">
+
+                    <!-- Título y Subtítulo -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Soporte y Ayuda"
+                        android:textColor="#156082"
+                        android:textSize="26sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Resolvemos tus dudas sobre Nexo Seguridad"
+                        android:textColor="#757575"
+                        android:textSize="14sp"
+                        android:gravity="center"
+                        android:layout_marginBottom="20dp" />
+
+                    <!-- Card Preguntas Frecuentes (FAQ) -->
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="6dp"
+                        android:backgroundTint="?attr/colorSurface"
+                        android:layout_marginBottom="24dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="20dp">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Preguntas Frecuentes (FAQ)"
+                                android:textColor="#156082"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="16dp" />
+
+                            <!-- Pregunta 1 -->
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="1. ¿Cómo funciona el modo parental?"
+                                android:textColor="#212121"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="El modo parental evita que la aplicación sea desinstalada por menores y protege el servicio de localización mediante un PIN de seguridad configurado por los padres."
+                                android:textColor="#616161"
+                                android:textSize="13sp"
+                                android:layout_marginTop="4dp"
+                                android:layout_marginBottom="16dp"
+                                android:lineSpacingExtra="3dp" />
+
+                            <!-- Pregunta 2 -->
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="2. ¿Cómo activo las alertas de mi círculo familiar?"
+                                android:textColor="#212121"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Las alertas se activan automáticamente al presionar el botón de pánico en la pantalla principal o al salir de una zona segura delimitada en tus rutas."
+                                android:textColor="#616161"
+                                android:textSize="13sp"
+                                android:layout_marginTop="4dp"
+                                android:layout_marginBottom="16dp"
+                                android:lineSpacingExtra="3dp" />
+
+                            <!-- Pregunta 3 -->
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="3. ¿Es mi información de ubicación segura?"
+                                android:textColor="#212121"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Sí, tus datos de ubicación se almacenan de forma encriptada en la nube y únicamente los miembros de tu grupo familiar autorizado pueden visualizarlos en tiempo real."
+                                android:textColor="#616161"
+                                android:textSize="13sp"
+                                android:layout_marginTop="4dp"
+                                android:lineSpacingExtra="3dp" />
+
+                        </LinearLayout>
+
+                    </androidx.cardview.widget.CardView>
+
+                    <!-- Botón de Contactar a Soporte -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnContactSupportEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:text="CONTACTAR A SOPORTE"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:backgroundTint="#156082"
+                        app:cornerRadius="12dp"
+                        android:layout_marginBottom="24dp" />
+
+                    <!-- Pie de página con nombres de desarrolladores -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Desarrollado por Martínez Morales Martha Sicaru, Pérez Hernández Ricardo y Hernández Hernández Jessica"
+                        android:textColor="#9E9E9E"
+                        android:textSize="12sp"
+                        android:textStyle="italic"
+                        android:gravity="center"
+                        android:padding="8dp" />
+
+                </LinearLayout>
+
+            </ScrollView>
+
+        </LinearLayout>
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+    <!-- Menú Lateral -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/nav_view_soporte"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:fitsSystemWindows="true"
+        app:headerLayout="@layout/nav_header_main"
+        app:menu="@menu/drawer_menu" />
+
+</androidx.drawerlayout.widget.DrawerLayout>

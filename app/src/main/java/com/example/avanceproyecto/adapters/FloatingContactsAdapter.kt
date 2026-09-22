@@ -3,8 +3,10 @@ package com.example.avanceproyecto.adapters
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.avanceproyecto.R
 import com.example.avanceproyecto.models.UserConnection
 
@@ -14,7 +16,7 @@ class FloatingContactsAdapter(
 ) : RecyclerView.Adapter<FloatingContactsAdapter.FloatingViewHolder>() {
 
     class FloatingViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val tvFloatingAvatar: TextView = itemView.findViewById(R.id.tvFloatingAvatar)
+        val imgFloatingAvatar: ImageView = itemView.findViewById(R.id.imgFloatingAvatar)
         val tvFloatingName: TextView = itemView.findViewById(R.id.tvFloatingName)
     }
 
@@ -33,7 +35,18 @@ class FloatingContactsAdapter(
         }
 
         holder.tvFloatingName.text = shortName
-        holder.tvFloatingAvatar.text = if (contact.type.equals("family", ignoreCase = true) || contact.type.equals("familia", ignoreCase = true)) "👨‍👩‍👧‍👦" else "👤"
+
+        // Cargar foto de perfil con Glide o imagen por defecto
+        if (contact.photoUrl.isNotEmpty()) {
+            Glide.with(holder.itemView.context)
+                .load(contact.photoUrl)
+                .placeholder(R.drawable.ic_person)
+                .error(R.drawable.ic_person)
+                .circleCrop()
+                .into(holder.imgFloatingAvatar)
+        } else {
+            holder.imgFloatingAvatar.setImageResource(R.drawable.ic_person)
+        }
 
         holder.itemView.setOnClickListener {
             onContactClick(contact)

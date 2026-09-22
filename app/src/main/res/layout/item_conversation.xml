@@ -29,13 +29,22 @@
             app:cardElevation="1dp"
             android:backgroundTint="?attr/colorPrimary">
 
+            <ImageView
+                android:id="@+id/imgConversationAvatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_person"
+                android:contentDescription="Foto del chat" />
+
             <TextView
                 android:id="@+id/tvAvatarIcon"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
-                android:text="👤"
-                android:textSize="22sp" />
+                android:text="👥"
+                android:textSize="22sp"
+                android:visibility="gone" />
 
         </androidx.cardview.widget.CardView>
 

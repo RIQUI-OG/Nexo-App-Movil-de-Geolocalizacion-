@@ -16,13 +16,21 @@
         android:padding="12dp"
         android:gravity="center_vertical">
 
-        <!-- Avatar / Icono del contacto -->
+        <!-- Avatar / Foto de Perfil del contacto -->
         <androidx.cardview.widget.CardView
             android:layout_width="50dp"
             android:layout_height="50dp"
             app:cardCornerRadius="25dp"
             app:cardElevation="2dp"
             android:backgroundTint="#E3F2FD">
+
+            <ImageView
+                android:id="@+id/imgContactPhoto"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_person"
+                android:contentDescription="Foto de contacto" />
 
             <TextView
                 android:id="@+id/tvContactInitial"
@@ -32,7 +40,8 @@
                 android:text="A"
                 android:textColor="#1565C0"
                 android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:visibility="gone" />
 
         </androidx.cardview.widget.CardView>
 

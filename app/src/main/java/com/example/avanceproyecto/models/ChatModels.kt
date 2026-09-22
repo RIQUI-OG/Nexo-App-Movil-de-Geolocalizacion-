@@ -10,12 +10,13 @@ data class ChatMessage(
     val chatId: String = "",
     val senderId: String = "",
     val senderName: String = "",
+    val senderPhotoUrl: String = "",
     val text: String = "",
     val timestamp: Long = System.currentTimeMillis(),
     val replyToText: String = "",
     val replyToName: String = ""
 ) {
-    constructor() : this("", "", "", "", "", System.currentTimeMillis(), "", "")
+    constructor() : this("", "", "", "", "", "", System.currentTimeMillis(), "", "")
 }
 
 @Keep
@@ -27,7 +28,8 @@ data class ChatConversation(
     var participants: List<String>? = null,
     var lastMessage: String = "",
     var lastMessageTime: Long = 0L,
+    var photoUrl: String = "",
     var unreadCounts: Map<String, Int> = HashMap()
 ) {
-    constructor() : this("", "", false, null, "", 0L, HashMap())
+    constructor() : this("", "", false, null, "", 0L, "", HashMap())
 }

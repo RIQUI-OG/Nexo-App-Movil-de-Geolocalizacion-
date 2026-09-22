@@ -11,7 +11,6 @@ data class User(
     val fcmToken: String = "",
     val createdAt: Timestamp = Timestamp.now()
 ) {
-    // Constructor sin argumentos requerido por Firebase
     constructor() : this("", "", "", "", "", "", Timestamp.now())
 }
 
@@ -23,9 +22,10 @@ data class UserConnection(
     val connectedUserEmail: String = "",
     val type: String = "friend", // "family" o "friend"
     val status: String = "pending", // "pending" o "accepted"
+    val photoUrl: String = "",
     val createdAt: Timestamp = Timestamp.now()
 ) {
-    constructor() : this("", "", "", "", "", "friend", "pending", Timestamp.now())
+    constructor() : this("", "", "", "", "", "friend", "pending", "", Timestamp.now())
 }
 
 data class UserLocation(

@@ -1,8 +1,6 @@
 package com.example.avanceproyecto
 
 import android.Manifest
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -20,11 +18,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
-import com.example.avanceproyecto.models.ChatConversation
+import com.bumptech.glide.Glide
 import com.example.avanceproyecto.models.ChatMessage
 import com.example.avanceproyecto.models.Emergency
 import com.example.avanceproyecto.services.LocationForegroundService
@@ -54,9 +50,8 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
 
     private var userId: String = ""
     private var userName: String = "Usuario"
+    private var myPhotoUrl: String = ""
 
-    private val CHANNEL_ID = "nexo_alerts_channel"
-    private val NOTIFICATION_ID = 1
     private val LOCATION_PERMISSION_REQUEST_CODE = 1001
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -106,10 +101,14 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
                     val name = doc.getString("name") ?: ""
+                    val photo = doc.getString("photoUrl") ?: ""
                     if (name.isNotEmpty()) {
                         userName = name
-                        updateWelcomeUI()
                     }
+                    if (photo.isNotEmpty()) {
+                        myPhotoUrl = photo
+                    }
+                    updateWelcomeUI()
                 }
             }
     }
@@ -122,6 +121,15 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
         val headerView = navView?.getHeaderView(0)
         val tvProfileHeader = headerView?.findViewById<TextView>(R.id.tv_profile_header)
         tvProfileHeader?.text = userName
+
+        val imgProfileHeader = headerView?.findViewById<ImageView>(R.id.img_profile_header)
+        if (myPhotoUrl.isNotEmpty() && imgProfileHeader != null) {
+            Glide.with(this)
+                .load(myPhotoUrl)
+                .placeholder(R.drawable.ic_person)
+                .circleCrop()
+                .into(imgProfileHeader)
+        }
     }
 
     override fun onResume() {
@@ -256,7 +264,7 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
                 saveEmergencyToFirebase(it.latitude, it.longitude)
                 sendNotificationToFamily(it.latitude, it.longitude)
                 sendFamilyGroupEmergencyMessage(it.latitude, it.longitude)
-                showLocalNotification(it.latitude, it.longitude)
+                showLocalNotification()
             } ?: run {
                 Toast.makeText(this, "❌ No se pudo obtener la ubicación", Toast.LENGTH_SHORT).show()
             }
@@ -299,63 +307,30 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
     private fun sendFamilyGroupEmergencyMessage(latitude: Double, longitude: Double) {
         if (userId.isEmpty()) return
 
-        // 1. Enviar a todos los grupos personalizados donde el usuario sea participante
-        realtimeDatabase.getReference("chat_conversations")
-            .addListenerForSingleValueEvent(object : com.google.firebase.database.ValueEventListener {
-                override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
-                    for (itemSnapshot in snapshot.children) {
-                        val conversation = try {
-                            itemSnapshot.getValue(ChatConversation::class.java)
-                        } catch (e: Exception) {
-                            null
-                        }
-
-                        if (conversation != null && conversation.isGroup) {
-                            val participants = conversation.participants ?: emptyList()
-                            if (participants.contains(userId)) {
-                                val groupId = conversation.chatId
-                                if (groupId.isNotEmpty() && groupId != "group_family_$userId") {
-                                    sendEmergencyMessageToChat(groupId, latitude, longitude)
-                                }
-                            }
-                        }
-                    }
-                }
-                override fun onCancelled(error: com.google.firebase.database.DatabaseError) {}
-            })
-
-        // 2. Enviar también al grupo familiar legacy por defecto
         val familyGroupId = "group_family_$userId"
-        sendEmergencyMessageToChat(familyGroupId, latitude, longitude, true)
-    }
-
-    private fun sendEmergencyMessageToChat(chatId: String, latitude: Double, longitude: Double, isLegacyFamily: Boolean = false) {
-        val msgRef = realtimeDatabase.getReference("chat_messages/$chatId").push()
+        val msgRef = realtimeDatabase.getReference("chat_messages/$familyGroupId").push()
         val msgId = msgRef.key ?: System.currentTimeMillis().toString()
 
         val emergencyMessage = ChatMessage(
             messageId = msgId,
-            chatId = chatId,
+            chatId = familyGroupId,
             senderId = "SYSTEM_EMERGENCY",
             senderName = "🚨 ALERTA DE EMERGENCIA",
-            text = "🚨 ¡ATENCIÓN! $userName ha activado la alerta de emergencia.\nUbicación GPS: Lat $latitude, Lon $longitude",
+            text = "🚨 ¡ATENCIÓN FAMILIA! $userName ha activado la alerta de emergencia.\nUbicación GPS: Lat $latitude, Lon $longitude",
             timestamp = System.currentTimeMillis()
         )
 
         msgRef.setValue(emergencyMessage)
 
-        val conversationUpdate = mutableMapOf<String, Any>(
-            "chatId" to chatId,
+        val conversationUpdate = mapOf(
+            "chatId" to familyGroupId,
             "lastMessage" to "🚨 ¡ALERTA DE EMERGENCIA ACTIVADA POR $userName!",
-            "lastMessageTime" to System.currentTimeMillis()
+            "lastMessageTime" to System.currentTimeMillis(),
+            "title" to "👨‍👩‍👧‍👦 Chat Familiar",
+            "isGroup" to true
         )
 
-        if (isLegacyFamily) {
-            conversationUpdate["title"] = "👨‍👩‍👧‍👦 Familia de $userName"
-            conversationUpdate["isGroup"] = true
-        }
-
-        realtimeDatabase.getReference("chat_conversations/$chatId")
+        realtimeDatabase.getReference("chat_conversations/$familyGroupId")
             .updateChildren(conversationUpdate)
     }
 
@@ -392,22 +367,7 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
             }
     }
 
-    private fun showLocalNotification(latitude: Double, longitude: Double) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ActivityCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                    100
-                )
-                return
-            }
-        }
-
+    private fun showLocalNotification() {
         NotificationHelper.showSecurityAlertNotification(
             this,
             "🚨 Alerta de Seguridad Enviada",
@@ -494,6 +454,7 @@ class HomeActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnN
             drawerLayout.closeDrawer(GravityCompat.START)
         } else {
             showExitDialog()
+            super.onBackPressed()
         }
     }
 

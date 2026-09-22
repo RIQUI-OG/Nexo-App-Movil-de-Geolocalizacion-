@@ -4,18 +4,26 @@ import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.location.Location
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.RingtoneManager
+import android.os.Build
 import android.os.IBinder
 import android.os.Looper
-import android.support.v4.media.session.MediaSessionCompat
-import android.support.v4.media.session.PlaybackStateCompat
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.media.VolumeProviderCompat
 import com.example.avanceproyecto.HomeActivity
 import com.example.avanceproyecto.R
 import com.example.avanceproyecto.models.ActiveTrip
@@ -39,8 +47,9 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlin.math.sqrt
 
-class LocationForegroundService : Service() {
+class LocationForegroundService : Service(), SensorEventListener {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var realtimeDatabase: FirebaseDatabase
@@ -55,54 +64,100 @@ class LocationForegroundService : Service() {
     private val chatMessageListeners = mutableMapOf<String, ChildEventListener>()
     private var serviceStartTime = System.currentTimeMillis()
 
-    private var mediaSession: MediaSessionCompat? = null
+    // Sensor Shake
+    private lateinit var sensorManager: SensorManager
+    private var accelerometer: Sensor? = null
+    private var lastShakeTime: Long = 0
+    private var shakeCount = 0
+
+    // Audio & Alarma Sonora
     private var mediaPlayer: MediaPlayer? = null
-    private var volumeUpCount = 0
-    private var volumeDownCount = 0
-    private var lastVolumeUpTime = 0L
-    private var lastVolumeDownTime = 0L
+    private var audioManager: AudioManager? = null
 
     companion object {
         private const val TAG = "LocationService"
         private const val SERVICE_NOTIFICATION_ID = 9901
+        private const val SHAKE_THRESHOLD_GRAVITY = 2.7f
+        private const val SHAKE_SLOP_TIME_MS = 500
+        private const val SHAKE_RESET_TIME_MS = 3000
 
-        @SuppressLint("StaticFieldLeak")
-        var instance: LocationForegroundService? = null
+        private var activeInstance: LocationForegroundService? = null
 
         fun stopAlarm() {
-            instance?.stopLoudAlarm()
+            activeInstance?.stopLoudAlarm()
         }
     }
 
     override fun onCreate() {
         super.onCreate()
-        instance = this
+        activeInstance = this
         auth = FirebaseAuth.getInstance()
-        realtimeDatabase = FirebaseDatabase.getInstance()
         firestore = FirebaseFirestore.getInstance()
+        realtimeDatabase = FirebaseDatabase.getInstance()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         userId = auth.currentUser?.uid ?: ""
         serviceStartTime = System.currentTimeMillis()
 
+        loadUserName()
+        initShakeSensor()
+        initAudioSystem()
+
         NotificationHelper.createNotificationChannels(this)
-        setupVolumeInterception()
+    }
+
+    fun stopLoudAlarm() {
+        try {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+            mediaPlayer = null
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun loadUserName() {
+        if (userId.isNotEmpty()) {
+            firestore.collection("users").document(userId).get()
+                .addOnSuccessListener { doc ->
+                    userName = doc.getString("name") ?: "Usuario"
+                }
+        }
+    }
+
+    private fun initShakeSensor() {
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        accelerometer?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+    }
+
+    private fun initAudioSystem() {
+        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val inputUserId = intent?.getStringExtra("USER_ID")
         if (!inputUserId.isNullOrEmpty()) {
             userId = inputUserId
+            loadUserName()
         } else if (userId.isEmpty()) {
             userId = auth.currentUser?.uid ?: ""
+            loadUserName()
         }
-
-        fetchUserName()
 
         try {
             startForeground(SERVICE_NOTIFICATION_ID, createPermanentNotification())
         } catch (e: Exception) {
             Log.e(TAG, "Error iniciando startForeground", e)
+        }
+
+        val action = intent?.action
+        if (action == "ACTION_SILENT_EMERGENCY") {
+            triggerEmergencyAlert(silent = true)
+        } else if (action == "ACTION_LOUD_EMERGENCY") {
+            triggerEmergencyAlert(silent = false)
         }
 
         startLocationTracking()
@@ -113,94 +168,85 @@ class LocationForegroundService : Service() {
         return START_STICKY
     }
 
-    private fun fetchUserName() {
-        if (userId.isEmpty()) return
-        firestore.collection("users").document(userId).get()
-            .addOnSuccessListener { doc ->
-                if (doc.exists()) {
-                    userName = doc.getString("name") ?: "Usuario"
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
+            val x = event.values[0]
+            val y = event.values[1]
+            val z = event.values[2]
+
+            val gX = x / SensorManager.GRAVITY_EARTH
+            val gY = y / SensorManager.GRAVITY_EARTH
+            val gZ = z / SensorManager.GRAVITY_EARTH
+
+            val gForce = sqrt((gX * gX + gY * gY + gZ * gZ).toDouble()).toFloat()
+
+            if (gForce > SHAKE_THRESHOLD_GRAVITY) {
+                val now = System.currentTimeMillis()
+
+                if (lastShakeTime + SHAKE_SLOP_TIME_MS > now) {
+                    return
+                }
+
+                if (lastShakeTime + SHAKE_RESET_TIME_MS < now) {
+                    shakeCount = 0
+                }
+
+                lastShakeTime = now
+                shakeCount++
+
+                if (shakeCount >= 3) {
+                    shakeCount = 0
+                    vibrateFeedback()
+                    triggerEmergencyAlert(silent = true)
                 }
             }
-    }
-
-    private fun setupVolumeInterception() {
-        mediaSession = MediaSessionCompat(this, "NexoEmergencySession")
-        mediaSession?.setFlags(
-            MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or
-            MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS
-        )
-        mediaSession?.setPlaybackState(
-            PlaybackStateCompat.Builder()
-                .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
-                .build()
-        )
-
-        val volumeProvider = object : VolumeProviderCompat(VOLUME_CONTROL_RELATIVE, 100, 50) {
-            override fun onAdjustVolume(direction: Int) {
-                handleVolumeButtonPress(direction)
-            }
         }
-
-        mediaSession?.setPlaybackToRemote(volumeProvider)
-        mediaSession?.isActive = true
     }
 
-    private fun handleVolumeButtonPress(direction: Int) {
-        val currentTime = System.currentTimeMillis()
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
-        if (direction == 1) { // Volume Up
-            if (currentTime - lastVolumeUpTime > 3000) volumeUpCount = 0
-            volumeUpCount++
-            lastVolumeUpTime = currentTime
-
-            if (volumeUpCount == 3) {
-                volumeUpCount = 0
-                triggerEmergencyAlert(silent = false)
+    @SuppressLint("MissingPermission")
+    private fun vibrateFeedback() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                vibratorManager.defaultVibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                vibrator.vibrate(500)
             }
-        } else if (direction == -1) { // Volume Down
-            if (currentTime - lastVolumeDownTime > 3000) volumeDownCount = 0
-            volumeDownCount++
-            lastVolumeDownTime = currentTime
-
-            if (volumeDownCount == 3) {
-                volumeDownCount = 0
-                triggerEmergencyAlert(silent = true)
-            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
     private fun playLoudAlarm() {
-        if (mediaPlayer?.isPlaying == true) return
-
         try {
-            val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+            audioManager?.setStreamVolume(
+                AudioManager.STREAM_ALARM,
+                audioManager?.getStreamMaxVolume(AudioManager.STREAM_ALARM) ?: 100,
+                0
+            )
 
+            val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+
+            mediaPlayer?.release()
             mediaPlayer = MediaPlayer().apply {
-                setDataSource(this@LocationForegroundService, alarmUri)
-                setAudioStreamType(AudioManager.STREAM_ALARM)
+                setDataSource(applicationContext, alarmUri)
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                )
                 isLooping = true
                 prepare()
                 start()
             }
-
-            val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
-            val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, maxVolume, 0)
         } catch (e: Exception) {
-            Log.e(TAG, "Error playing alarm", e)
-        }
-    }
-
-    fun stopLoudAlarm() {
-        try {
-            if (mediaPlayer?.isPlaying == true) {
-                mediaPlayer?.stop()
-                mediaPlayer?.release()
-                mediaPlayer = null
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error stopping alarm", e)
+            Log.e(TAG, "Error reproduciendo alarma", e)
         }
     }
 
@@ -357,9 +403,9 @@ class LocationForegroundService : Service() {
     private fun startLocationTracking() {
         try {
             val locationRequest = LocationRequest.create().apply {
-                interval = 15000 
-                fastestInterval = 10000
-                priority = LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY 
+                interval = 8000
+                fastestInterval = 4000
+                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
             }
 
             val locationCallback = object : LocationCallback() {
@@ -532,7 +578,6 @@ class LocationForegroundService : Service() {
             .orderByChild("timestamp")
             .startAt(serviceStartTime.toDouble())
             .addChildEventListener(listener)
-
     }
 
     private fun listenToIncomingMessagesAndAlerts() {
@@ -550,12 +595,14 @@ class LocationForegroundService : Service() {
                             null
                         } ?: return
 
-                        if (!processedAlerts.contains(alert.alertId) && alert.alertId.isNotEmpty()) {
+                        // Solo notificar si la alerta ocurrió MIENTRAS el servicio está activo (no alertas antiguas almacenadas previamente)
+                        if (alert.timestamp >= serviceStartTime && !processedAlerts.contains(alert.alertId) && alert.alertId.isNotEmpty()) {
                             processedAlerts.add(alert.alertId)
 
                             val title = when (alert.type) {
                                 "DEVIATION" -> "🚨 ¡ALERTA DE DESVIACIÓN!"
                                 "TRIP_STARTED" -> "🚀 Inicio de Ruta - ${alert.userName}"
+                                "TRIP_COMPLETED" -> "✅ Ruta Concluida - ${alert.userName}"
                                 else -> "🚨 Alerta de Seguridad"
                             }
 
@@ -580,8 +627,10 @@ class LocationForegroundService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        activeInstance = null
+        sensorManager.unregisterListener(this)
         mediaPlayer?.release()
-        mediaSession?.release()
+        mediaPlayer = null
         Log.d(TAG, "LocationForegroundService detenido")
     }
 }

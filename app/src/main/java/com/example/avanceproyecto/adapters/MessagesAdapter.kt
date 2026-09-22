@@ -5,10 +5,12 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.avanceproyecto.R
 import com.example.avanceproyecto.models.ChatMessage
 import java.text.SimpleDateFormat
@@ -25,6 +27,7 @@ class MessagesAdapter(
     class MessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val rootLayout: LinearLayout = itemView as LinearLayout
         val cvSenderAvatar: CardView = itemView.findViewById(R.id.cvSenderAvatar)
+        val imgSenderProfile: ImageView = itemView.findViewById(R.id.imgSenderProfile)
         val bubbleLayout: LinearLayout = itemView.findViewById(R.id.bubbleLayout)
         val tvMessageText: TextView = itemView.findViewById(R.id.tvMessageText)
         val tvMessageTime: TextView = itemView.findViewById(R.id.tvMessageTime)
@@ -62,25 +65,35 @@ class MessagesAdapter(
         }
 
         if (isMe) {
-            // Mensaje enviado por mí (Alineado a la derecha)
+            // Mensaje enviado por mí
             holder.rootLayout.gravity = Gravity.END or Gravity.BOTTOM
             holder.cvSenderAvatar.visibility = View.GONE
             holder.tvSenderName.visibility = View.GONE
             holder.bubbleLayout.setBackgroundResource(R.drawable.bg_bubble_sent)
-            holder.tvMessageText.setTextColor(android.graphics.Color.WHITE)
-            holder.tvMessageTime.setTextColor(android.graphics.Color.parseColor("#E0E0E0"))
+            holder.tvMessageText.setTextColor(Color.WHITE)
+            holder.tvMessageTime.setTextColor(Color.parseColor("#E0E0E0"))
         } else {
-            // Mensaje recibido (Alineado a la izquierda)
+            // Mensaje recibido
             holder.rootLayout.gravity = Gravity.START or Gravity.BOTTOM
             holder.cvSenderAvatar.visibility = View.VISIBLE
-            
-            // Mostrar nombre del sender solo en grupos (podríamos checar si es grupo, o siempre mostrarlo)
+
+            if (message.senderPhotoUrl.isNotEmpty()) {
+                Glide.with(holder.itemView.context)
+                    .load(message.senderPhotoUrl)
+                    .placeholder(R.drawable.ic_person)
+                    .error(R.drawable.ic_person)
+                    .circleCrop()
+                    .into(holder.imgSenderProfile)
+            } else {
+                holder.imgSenderProfile.setImageResource(R.drawable.ic_person)
+            }
+
             holder.tvSenderName.visibility = View.VISIBLE
             holder.tvSenderName.text = message.senderName
-            
+
             holder.bubbleLayout.setBackgroundResource(R.drawable.bg_bubble_received)
-            holder.tvMessageText.setTextColor(android.graphics.Color.parseColor("#212121"))
-            holder.tvMessageTime.setTextColor(android.graphics.Color.parseColor("#757575"))
+            holder.tvMessageText.setTextColor(Color.parseColor("#212121"))
+            holder.tvMessageTime.setTextColor(Color.parseColor("#757575"))
         }
     }
 

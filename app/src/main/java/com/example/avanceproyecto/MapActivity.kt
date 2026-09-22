@@ -4,8 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Color
 import android.location.Location
 import android.os.Bundle
@@ -30,11 +28,14 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.avanceproyecto.adapters.FloatingContactsAdapter
 import com.example.avanceproyecto.models.ActiveTrip
 import com.example.avanceproyecto.models.RouteAlert
 import com.example.avanceproyecto.models.RoutePoint
 import com.example.avanceproyecto.models.UserConnection
+import com.example.avanceproyecto.utils.CustomMapMarkerHelper
+import com.example.avanceproyecto.utils.MarkerOffsetHelper
 import com.example.avanceproyecto.utils.RouteTrackingHelper
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -45,7 +46,6 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
@@ -68,7 +68,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
     private lateinit var auth: FirebaseAuth
     private lateinit var drawerLayout: DrawerLayout
 
-    // UI para Panel Flotante de Contactos (Estilo Grupo / Familia)
+    // UI para Panel Flotante de Contactos
     private lateinit var cardFloatingContactsPanel: CardView
     private lateinit var btnToggleFloatingPanel: ImageButton
     private lateinit var spinnerGroupFilter: Spinner
@@ -84,11 +84,14 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
     private var currentLocation: Location? = null
     private var userId: String = ""
     private var userName: String = "Usuario"
+    private var myPhotoUrl: String? = null
     private var focusContactId: String? = null
     private var focusContactName: String? = null
 
     private val contactMarkers = mutableMapOf<String, Marker>()
     private val contactLocationsMap = mutableMapOf<String, LatLng>()
+    private val contactTripListeners = mutableMapOf<String, ValueEventListener>()
+    private val contactLocationListeners = mutableMapOf<String, ValueEventListener>()
     private var myLocationMarker: Marker? = null
 
     private val allAcceptedContactsList = mutableListOf<UserConnection>()
@@ -105,10 +108,6 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
 
     private lateinit var locationCallback: LocationCallback
     private lateinit var locationRequest: LocationRequest
-
-    private var myActiveTripListener: ValueEventListener? = null
-    private val contactTripListeners = mutableMapOf<String, ValueEventListener>()
-    private val contactLocationListeners = mutableMapOf<String, ValueEventListener>()
 
     companion object {
         private const val TAG = "MapActivity"
@@ -160,7 +159,6 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
     }
 
     private fun initViews() {
-        // Banner de viaje activo
         cardActiveTripBanner = findViewById(R.id.cardActiveTripBanner)
         tvTripBannerTitle = findViewById(R.id.tvTripBannerTitle)
         tvTripBannerStatus = findViewById(R.id.tvTripBannerStatus)
@@ -170,7 +168,6 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
             confirmFinishActiveTrip()
         }
 
-        // Panel Flotante de Contactos
         cardFloatingContactsPanel = findViewById(R.id.cardFloatingContactsPanel)
         btnToggleFloatingPanel = findViewById(R.id.btnToggleFloatingPanel)
         spinnerGroupFilter = findViewById(R.id.spinnerGroupFilter)
@@ -254,6 +251,18 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
             firestore.collection("users").document(userId).get()
                 .addOnSuccessListener { doc ->
                     userName = doc.getString("name") ?: "Usuario"
+                    myPhotoUrl = doc.getString("photoUrl")
+
+                    val navView: NavigationView = findViewById(R.id.nav_view_map)
+                    val headerView = navView.getHeaderView(0)
+                    val imgProfileHeader = headerView?.findViewById<ImageView>(R.id.img_profile_header)
+                    if (!myPhotoUrl.isNullOrEmpty() && imgProfileHeader != null) {
+                        Glide.with(this)
+                            .load(myPhotoUrl)
+                            .placeholder(R.drawable.ic_person)
+                            .circleCrop()
+                            .into(imgProfileHeader)
+                    }
                 }
                 .addOnFailureListener { e ->
                     Log.e(TAG, "Error al cargar nombre de usuario", e)
@@ -447,31 +456,31 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
         if (userId.isEmpty() || userId.startsWith("guest_")) return
 
         try {
-            myActiveTripListener = object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    if (!snapshot.exists()) {
-                        hideMyActiveTrip()
-                        return
+            realtimeDatabase.getReference("active_trips/$userId")
+                .addValueEventListener(object : ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        if (!snapshot.exists()) {
+                            hideMyActiveTrip()
+                            return
+                        }
+
+                        val trip = try {
+                            snapshot.getValue(ActiveTrip::class.java)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error parseando ActiveTrip", e)
+                            null
+                        }
+
+                        if (trip != null && (trip.status == "IN_PROGRESS" || trip.status == "DEVIATED")) {
+                            currentActiveTrip = trip
+                            showMyActiveTrip(trip)
+                        } else {
+                            hideMyActiveTrip()
+                        }
                     }
 
-                    val trip = try {
-                        snapshot.getValue(ActiveTrip::class.java)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error parseando ActiveTrip", e)
-                        null
-                    }
-
-                    if (trip != null && (trip.status == "IN_PROGRESS" || trip.status == "DEVIATED")) {
-                        currentActiveTrip = trip
-                        showMyActiveTrip(trip)
-                    } else {
-                        hideMyActiveTrip()
-                    }
-                }
-
-                override fun onCancelled(error: DatabaseError) {}
-            }
-            realtimeDatabase.getReference("active_trips/$userId").addValueEventListener(myActiveTripListener!!)
+                    override fun onCancelled(error: DatabaseError) {}
+                })
         } catch (e: Exception) {
             Log.e(TAG, "Error consultando viaje activo", e)
         }
@@ -527,8 +536,6 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
-            } else {
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(currentLocation!!.latitude, currentLocation!!.longitude), 18f))
             }
         }
     }
@@ -594,7 +601,6 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
                     }
 
                 Toast.makeText(this@MapActivity, "✅ Ruta desactivada y finalizada con éxito", Toast.LENGTH_LONG).show()
-                // Regresar al HomeActivity de inmediato
                 val homeIntent = Intent(this@MapActivity, HomeActivity::class.java).apply {
                     putExtra("USER_ID", userId)
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -703,47 +709,38 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
             .show()
     }
 
-    private fun getBitmapDescriptorForTransport(transportMode: String): BitmapDescriptor {
-        val vectorResId = when (transportMode.lowercase()) {
-            "caminando", "walk" -> R.drawable.ic_directions_walk
-            "bicicleta", "bike" -> R.drawable.ic_directions_bike
-            "transporte público", "bus" -> R.drawable.ic_directions_bus
-            else -> R.drawable.ic_directions_car // coche, car, default
-        }
-
-        val vectorDrawable = ContextCompat.getDrawable(this, vectorResId)
-            ?: return BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
-
-        val size = (42 * resources.displayMetrics.density).toInt()
-        vectorDrawable.setBounds(0, 0, size, size)
-        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        vectorDrawable.draw(canvas)
-        return BitmapDescriptorFactory.fromBitmap(bitmap)
-    }
-
     private fun updateMyLocationOnMap(location: Location) {
         if (!::mMap.isInitialized) return
-        val latLng = LatLng(location.latitude, location.longitude)
+        val myRawLatLng = LatLng(location.latitude, location.longitude)
+        contactLocationsMap[userId] = myRawLatLng
 
-        val icon = currentActiveTrip?.let { getBitmapDescriptorForTransport(it.transportMode) }
-            ?: BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+        // Aplicar dispersión radial incluyendo la propia ubicación para evitar traslapes
+        val offsetMap = MarkerOffsetHelper.applyOffsetToOverlappingLocations(contactLocationsMap)
+        val myAdjustedLatLng = offsetMap[userId] ?: myRawLatLng
 
-        if (myLocationMarker == null) {
-            myLocationMarker = mMap.addMarker(
-                MarkerOptions()
-                    .position(latLng)
-                    .title("Tu ubicación actual")
-                    .snippet("Lat: ${location.latitude}, Lon: ${location.longitude}")
-                    .icon(icon)
-            )
+        CustomMapMarkerHelper.createCustomMarker(
+            context = this,
+            name = userName,
+            photoUrl = myPhotoUrl,
+            isFamily = false,
+            isEmergency = false,
+            isSelf = true
+        ) { markerIcon ->
+            if (myLocationMarker == null) {
+                myLocationMarker = mMap.addMarker(
+                    MarkerOptions()
+                        .position(myAdjustedLatLng)
+                        .title("Tu ubicación: $userName")
+                        .icon(markerIcon)
+                )
 
-            if (focusContactId == null) {
-                centerMapOnLocation(location)
+                if (focusContactId == null) {
+                    centerMapOnLocation(location)
+                }
+            } else {
+                myLocationMarker?.position = myAdjustedLatLng
+                myLocationMarker?.setIcon(markerIcon)
             }
-        } else {
-            myLocationMarker?.position = latLng
-            myLocationMarker?.setIcon(icon)
         }
     }
 
@@ -771,20 +768,28 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
 
                 for (document in documents) {
                     val connection = document.toObject(UserConnection::class.java)
-                    allAcceptedContactsList.add(connection)
-
                     val connectedUserId = connection.connectedUserId
-                    val connectedUserName = connection.connectedUserName
-                    val type = connection.type
 
-                    if (focusContactId != null && connectedUserId != focusContactId) {
-                        continue
-                    }
+                    firestore.collection("users").document(connectedUserId).get()
+                        .addOnSuccessListener { userDoc ->
+                            val photo = userDoc.getString("photoUrl") ?: ""
+                            val updatedConnection = connection.copy(photoUrl = photo)
+                            allAcceptedContactsList.add(updatedConnection)
+                            filterFloatingContacts(spinnerGroupFilter.selectedItem?.toString() ?: "Familia")
 
-                    listenToContactLocation(connectedUserId, connectedUserName, type)
+                            if (focusContactId == null || connectedUserId == focusContactId) {
+                                listenToContactLocation(connectedUserId, updatedConnection.connectedUserName, updatedConnection.type)
+                            }
+                        }
+                        .addOnFailureListener {
+                            allAcceptedContactsList.add(connection)
+                            filterFloatingContacts(spinnerGroupFilter.selectedItem?.toString() ?: "Familia")
+
+                            if (focusContactId == null || connectedUserId == focusContactId) {
+                                listenToContactLocation(connectedUserId, connection.connectedUserName, connection.type)
+                            }
+                        }
                 }
-
-                filterFloatingContacts("Familia")
             }
             .addOnFailureListener { e ->
                 Log.e(TAG, "Error cargando contactos", e)
@@ -801,13 +806,27 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
                 val isEmergency = try { snapshot.child("isEmergency").getValue(Boolean::class.java) } catch (e: Exception) { false } ?: false
 
                 if (latitude != null && longitude != null) {
-                    val latLng = LatLng(latitude, longitude)
-                    contactLocationsMap[contactId] = latLng
+                    val rawLatLng = LatLng(latitude, longitude)
+                    contactLocationsMap[contactId] = rawLatLng
 
-                    updateContactMarker(contactId, contactName, latitude, longitude, type, isEmergency)
+                    // Asegurar que mi propia ubicación esté en el mapa para dispersión combinada
+                    currentLocation?.let {
+                        contactLocationsMap[userId] = LatLng(it.latitude, it.longitude)
+                    }
+
+                    // Aplicar dispersión radial considerando usuario + contactos
+                    val offsetMap = MarkerOffsetHelper.applyOffsetToOverlappingLocations(contactLocationsMap)
+
+                    offsetMap[userId]?.let { myAdjusted ->
+                        myLocationMarker?.position = myAdjusted
+                    }
+
+                    val adjustedLatLng = offsetMap[contactId] ?: rawLatLng
+
+                    updateContactMarker(contactId, contactName, adjustedLatLng.latitude, adjustedLatLng.longitude, type, isEmergency)
 
                     if (contactId == focusContactId && ::mMap.isInitialized) {
-                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16f))
+                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(adjustedLatLng, 16f))
                         contactMarkers[contactId]?.showInfoWindow()
                     }
                 }
@@ -830,36 +849,34 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
         if (!::mMap.isInitialized) return
         val latLng = LatLng(latitude, longitude)
 
-        val markerColor = when {
-            isEmergency -> BitmapDescriptorFactory.HUE_RED
-            type.equals("familia", ignoreCase = true) || type.equals("family", ignoreCase = true) -> BitmapDescriptorFactory.HUE_GREEN
-            else -> BitmapDescriptorFactory.HUE_ORANGE
-        }
+        val contactObj = allAcceptedContactsList.find { it.connectedUserId == contactId }
+        val photoUrl = contactObj?.photoUrl
+        val isFamily = type.equals("familia", ignoreCase = true) || type.equals("family", ignoreCase = true)
 
-        val title = if (isEmergency) "🚨 EMERGENCIA - $contactName" else "📍 $contactName"
-        val snippet = when {
-            isEmergency -> "¡ALERTA DE EMERGENCIA!"
-            type.equals("familia", ignoreCase = true) || type.equals("family", ignoreCase = true) -> "👨‍👩‍👧‍👦 Familiar"
-            else -> "👤 Amigo"
-        }
+        CustomMapMarkerHelper.createCustomMarker(
+            context = this,
+            name = contactName,
+            photoUrl = photoUrl,
+            isFamily = isFamily,
+            isEmergency = isEmergency,
+            isSelf = false
+        ) { markerIcon ->
+            if (contactMarkers.containsKey(contactId)) {
+                contactMarkers[contactId]?.apply {
+                    position = latLng
+                    setIcon(markerIcon)
+                }
+            } else {
+                val marker = mMap.addMarker(
+                    MarkerOptions()
+                        .position(latLng)
+                        .title("📍 $contactName")
+                        .icon(markerIcon)
+                )
 
-        if (contactMarkers.containsKey(contactId)) {
-            contactMarkers[contactId]?.apply {
-                position = latLng
-                this.title = title
-                this.snippet = snippet
-            }
-        } else {
-            val marker = mMap.addMarker(
-                MarkerOptions()
-                    .position(latLng)
-                    .title(title)
-                    .snippet(snippet)
-                    .icon(BitmapDescriptorFactory.defaultMarker(markerColor))
-            )
-
-            if (marker != null) {
-                contactMarkers[contactId] = marker
+                if (marker != null) {
+                    contactMarkers[contactId] = marker
+                }
             }
         }
     }
@@ -901,13 +918,14 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, NavigationView.OnNa
 
     override fun onDestroy() {
         super.onDestroy()
-        
-        // Optimización de batería: Remover listeners para evitar memory leaks y consumo en background
-        myActiveTripListener?.let { realtimeDatabase.getReference("active_trips/$userId").removeEventListener(it) }
-        contactTripListeners.forEach { (id, listener) -> realtimeDatabase.getReference("active_trips/$id").removeEventListener(listener) }
-        contactLocationListeners.forEach { (id, listener) -> realtimeDatabase.getReference("locations/$id").removeEventListener(listener) }
-        contactTripListeners.clear()
+        for ((contactId, listener) in contactLocationListeners) {
+            realtimeDatabase.getReference("locations/$contactId").removeEventListener(listener)
+        }
+        for ((contactId, listener) in contactTripListeners) {
+            realtimeDatabase.getReference("active_trips/$contactId").removeEventListener(listener)
+        }
         contactLocationListeners.clear()
+        contactTripListeners.clear()
     }
 
     override fun onBackPressed() {

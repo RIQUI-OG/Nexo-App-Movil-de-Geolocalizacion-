@@ -2,7 +2,6 @@ package com.example.avanceproyecto
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.widget.Button
@@ -21,6 +20,7 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.avanceproyecto.adapters.ContactsAdapter
 import com.example.avanceproyecto.adapters.PendingRequestsAdapter
 import com.example.avanceproyecto.models.ChatConversation
@@ -36,23 +36,22 @@ import com.google.firebase.firestore.FirebaseFirestore
 class ContactsActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
     private lateinit var drawerLayout: DrawerLayout
-    private lateinit var firestore: FirebaseFirestore
-    private lateinit var realtimeDatabase: FirebaseDatabase
-    private lateinit var auth: FirebaseAuth
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: ContactsAdapter
     private lateinit var fabAddContact: FloatingActionButton
     private lateinit var btnPendingRequests: Button
 
+    private lateinit var firestore: FirebaseFirestore
+    private lateinit var realtimeDatabase: FirebaseDatabase
+    private lateinit var auth: FirebaseAuth
+
     private var userId: String = ""
     private var myUserName: String = "Usuario"
     private var myUserEmail: String = ""
+    private var myPhotoUrl: String = ""
+
     private val contactsList = mutableListOf<UserConnection>()
     private val pendingRequestsList = mutableListOf<UserConnection>()
-
-    companion object {
-        private const val TAG = "ContactsActivity"
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,6 +60,7 @@ class ContactsActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         auth = FirebaseAuth.getInstance()
         firestore = FirebaseFirestore.getInstance()
         realtimeDatabase = FirebaseDatabase.getInstance()
+
         userId = intent.getStringExtra("USER_ID") ?: auth.currentUser?.uid ?: ""
         myUserEmail = auth.currentUser?.email ?: ""
 
@@ -77,7 +77,24 @@ class ContactsActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         if (userId.isNotEmpty()) {
             firestore.collection("users").document(userId).get()
                 .addOnSuccessListener { doc ->
-                    myUserName = doc.getString("name") ?: "Usuario"
+                    if (doc.exists()) {
+                        myUserName = doc.getString("name") ?: "Usuario"
+                        myPhotoUrl = doc.getString("photoUrl") ?: ""
+
+                        val navView: NavigationView = findViewById(R.id.nav_view)
+                        val headerView = navView.getHeaderView(0)
+                        val tvProfileHeader = headerView?.findViewById<TextView>(R.id.tv_profile_header)
+                        tvProfileHeader?.text = myUserName
+
+                        val imgProfileHeader = headerView?.findViewById<ImageView>(R.id.img_profile_header)
+                        if (myPhotoUrl.isNotEmpty() && imgProfileHeader != null) {
+                            Glide.with(this)
+                                .load(myPhotoUrl)
+                                .placeholder(R.drawable.ic_person)
+                                .circleCrop()
+                                .into(imgProfileHeader)
+                        }
+                    }
                 }
         }
     }
@@ -87,7 +104,7 @@ class ContactsActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         val navView: NavigationView = findViewById(R.id.nav_view)
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
-        supportActionBar?.title = "Mis Contactos A"
+        supportActionBar?.title = "Mis Contactos"
 
         navView.setNavigationItemSelectedListener(this)
 
@@ -248,18 +265,18 @@ class ContactsActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             .update("status", "accepted")
             .addOnSuccessListener {
                 val reverseType = if (request.type == "Niño") "Tutor" else request.type
-                createReverseAcceptedConnection(request.connectedUserId, reverseType)
+                createReverseConnection(request.connectedUserId, reverseType)
 
-                if (request.type.contains("Familia", ignoreCase = true) || request.type.contains("family", ignoreCase = true) || request.type == "Niño" || reverseType == "Tutor") {
+                if (request.type.equals("Familia", ignoreCase = true) || request.type.equals("family", ignoreCase = true)) {
                     syncFamilyGroupChat(request.connectedUserId, request.connectedUserName)
                 }
 
-                Toast.makeText(this, "✅ Solicitud de ${request.connectedUserName} aceptada", Toast.LENGTH_SHORT).show()
-                checkPendingRequests()
+                Toast.makeText(this, "✅ Solicitud aceptada de ${request.connectedUserName}", Toast.LENGTH_SHORT).show()
                 loadContacts()
+                checkPendingRequests()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Error al aceptar solicitud: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "❌ Error al aceptar: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -273,7 +290,7 @@ class ContactsActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             }
     }
 
-    private fun createReverseAcceptedConnection(senderUserId: String, type: String) {
+    private fun createReverseConnection(senderUserId: String, type: String) {
         val connectionId = firestore.collection("connections").document().id
         val connection = UserConnection(
             connectionId = connectionId,
@@ -294,12 +311,10 @@ class ContactsActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     private fun syncFamilyGroupChat(connectedUserId: String, connectedUserName: String) {
         if (userId.isEmpty() || connectedUserId.isEmpty()) return
 
-        // Sincronizar el grupo del usuario A (quien acepta)
         val groupIdA = "group_family_$userId"
         val refA = realtimeDatabase.getReference("chat_conversations/$groupIdA")
         syncGroup(refA, userId, connectedUserId, "👨‍👩‍👧‍👦 Familia de $myUserName", connectedUserName)
 
-        // Sincronizar el grupo del usuario B (quien fue aceptado)
         val groupIdB = "group_family_$connectedUserId"
         val refB = realtimeDatabase.getReference("chat_conversations/$groupIdB")
         syncGroup(refB, connectedUserId, userId, "👨‍👩‍👧‍👦 Familia de $connectedUserName", myUserName)
@@ -418,50 +433,41 @@ class ContactsActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                     return@addOnSuccessListener
                 }
 
-                val targetDoc = querySnapshot.documents[0]
-                val targetUserId = targetDoc.id
-                val targetUserName = targetDoc.getString("name") ?: if (inputName.isNotEmpty()) inputName else "Contacto"
+                val foundUserDoc = querySnapshot.documents[0]
+                val foundUserId = foundUserDoc.id
+                val foundUserName = foundUserDoc.getString("name") ?: inputName.ifEmpty { "Usuario" }
+
+                val connectionId = firestore.collection("connections").document().id
+
+                val reverseType = when (category) {
+                    "Niño" -> "Tutor"
+                    "Tutor" -> "Niño"
+                    else -> category
+                }
+
+                val connectionForReceiver = UserConnection(
+                    connectionId = connectionId,
+                    userId = foundUserId,
+                    connectedUserId = userId,
+                    connectedUserName = myUserName,
+                    connectedUserEmail = myUserEmail,
+                    type = reverseType,
+                    status = "pending",
+                    createdAt = Timestamp.now()
+                )
 
                 firestore.collection("connections")
-                    .whereEqualTo("userId", targetUserId)
-                    .whereEqualTo("connectedUserId", userId)
-                    .get()
-                    .addOnSuccessListener { existingSnapshot ->
-                        if (!existingSnapshot.isEmpty) {
-                            val existing = existingSnapshot.documents[0].toObject(UserConnection::class.java)
-                            if (existing?.status == "accepted") {
-                                Toast.makeText(this, "⚠️ '$targetUserName' ya es tu contacto aceptado", Toast.LENGTH_LONG).show()
-                            } else {
-                                Toast.makeText(this, "📩 Ya enviaste una solicitud pendiente a '$targetUserName'", Toast.LENGTH_LONG).show()
-                            }
-                            return@addOnSuccessListener
-                        }
-
-                        val connectionId = firestore.collection("connections").document().id
-                        val pendingRequest = UserConnection(
-                            connectionId = connectionId,
-                            userId = targetUserId,
-                            connectedUserId = userId,
-                            connectedUserName = myUserName,
-                            connectedUserEmail = currentEmail,
-                            type = category,
-                            status = "pending",
-                            createdAt = Timestamp.now()
-                        )
-
-                        firestore.collection("connections")
-                            .document(connectionId)
-                            .set(pendingRequest)
-                            .addOnSuccessListener {
-                                Toast.makeText(
-                                    this,
-                                    "📩 Solicitud de contacto enviada a '$targetUserName'. Se añadirá a tus contactos cuando la acepte.",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
-                            .addOnFailureListener { e ->
-                                Toast.makeText(this, "❌ Error al enviar solicitud: ${e.message}", Toast.LENGTH_SHORT).show()
-                            }
+                    .document(connectionId)
+                    .set(connectionForReceiver)
+                    .addOnSuccessListener {
+                        Toast.makeText(
+                            this,
+                            "📩 Solicitud enviada a $foundUserName ($email)",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this, "❌ Error al enviar solicitud: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
             }
             .addOnFailureListener { e ->
@@ -479,20 +485,56 @@ class ContactsActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             .addOnSuccessListener { documents ->
                 contactsList.clear()
 
-                for (document in documents) {
-                    val connection = document.toObject(UserConnection::class.java)
-                    contactsList.add(connection)
-                }
-
-                adapter.notifyDataSetChanged()
-
-                val emptyStateLayout = findViewById<View>(R.id.emptyStateLayout)
-                if (contactsList.isEmpty()) {
+                if (documents.isEmpty()) {
+                    adapter.notifyDataSetChanged()
+                    val emptyStateLayout = findViewById<View>(R.id.emptyStateLayout)
                     emptyStateLayout?.visibility = View.VISIBLE
                     recyclerView.visibility = View.GONE
-                } else {
-                    emptyStateLayout?.visibility = View.GONE
-                    recyclerView.visibility = View.VISIBLE
+                    return@addOnSuccessListener
+                }
+
+                val totalDocs = documents.size()
+                var processedDocs = 0
+
+                for (document in documents) {
+                    val connection = document.toObject(UserConnection::class.java)
+                    val connectedUserId = connection.connectedUserId
+
+                    if (connectedUserId.isNotEmpty()) {
+                        firestore.collection("users").document(connectedUserId).get()
+                            .addOnSuccessListener { userDoc ->
+                                val photo = userDoc.getString("photoUrl") ?: ""
+                                val updatedConnection = connection.copy(photoUrl = photo)
+                                contactsList.add(updatedConnection)
+
+                                processedDocs++
+                                if (processedDocs == totalDocs) {
+                                    adapter.notifyDataSetChanged()
+                                    val emptyStateLayout = findViewById<View>(R.id.emptyStateLayout)
+                                    emptyStateLayout?.visibility = if (contactsList.isEmpty()) View.VISIBLE else View.GONE
+                                    recyclerView.visibility = if (contactsList.isEmpty()) View.GONE else View.VISIBLE
+                                }
+                            }
+                            .addOnFailureListener {
+                                contactsList.add(connection)
+                                processedDocs++
+                                if (processedDocs == totalDocs) {
+                                    adapter.notifyDataSetChanged()
+                                    val emptyStateLayout = findViewById<View>(R.id.emptyStateLayout)
+                                    emptyStateLayout?.visibility = if (contactsList.isEmpty()) View.VISIBLE else View.GONE
+                                    recyclerView.visibility = if (contactsList.isEmpty()) View.GONE else View.VISIBLE
+                                }
+                            }
+                    } else {
+                        contactsList.add(connection)
+                        processedDocs++
+                        if (processedDocs == totalDocs) {
+                            adapter.notifyDataSetChanged()
+                            val emptyStateLayout = findViewById<View>(R.id.emptyStateLayout)
+                            emptyStateLayout?.visibility = if (contactsList.isEmpty()) View.VISIBLE else View.GONE
+                            recyclerView.visibility = if (contactsList.isEmpty()) View.GONE else View.VISIBLE
+                        }
+                    }
                 }
             }
             .addOnFailureListener { e ->
@@ -550,71 +592,67 @@ class ContactsActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             }
 
             if (updatedName.isEmpty()) {
-                etName.error = "Ingresa el nombre"
+                etName.error = "El nombre no puede estar vacío"
                 return@setOnClickListener
             }
 
             dialog.dismiss()
-
-            val updates = mapOf(
-                "connectedUserName" to updatedName,
-                "type" to updatedCategory
-            )
-
-            firestore.collection("connections")
-                .document(connection.connectionId)
-                .update(updates)
-                .addOnSuccessListener {
-                    if (updatedCategory.contains("Familia", ignoreCase = true) || updatedCategory.contains("family", ignoreCase = true)) {
-                        syncFamilyGroupChat(connection.connectedUserId, updatedName)
-                    }
-
-                    Toast.makeText(this, "✅ Contacto $updatedName actualizado", Toast.LENGTH_SHORT).show()
-                    loadContacts()
-                }
+            updateConnectionInFirestore(connection, updatedName, updatedCategory)
         }
 
         btnDeleteContact.setOnClickListener {
             dialog.dismiss()
-            deleteConnection(connection)
+            confirmDeleteContact(connection)
         }
 
         dialog.show()
     }
 
-    private fun viewOnMap(connection: UserConnection) {
-        try {
-            val intent = Intent(this, MapActivity::class.java).apply {
-                putExtra("USER_ID", userId)
-                putExtra("FOCUS_CONTACT_ID", connection.connectedUserId)
-                putExtra("FOCUS_CONTACT_NAME", connection.connectedUserName)
+    private fun updateConnectionInFirestore(connection: UserConnection, newName: String, newCategory: String) {
+        firestore.collection("connections")
+            .document(connection.connectionId)
+            .update(
+                mapOf(
+                    "connectedUserName" to newName,
+                    "type" to newCategory
+                )
+            )
+            .addOnSuccessListener {
+                Toast.makeText(this, "✅ Contacto actualizado", Toast.LENGTH_SHORT).show()
+                loadContacts()
             }
-            startActivity(intent)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error starting MapActivity", e)
-            Toast.makeText(this, "❌ Error al abrir mapa: ${e.message}", Toast.LENGTH_LONG).show()
-        }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "❌ Error al actualizar: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
-    private fun deleteConnection(connection: UserConnection) {
+    private fun confirmDeleteContact(connection: UserConnection) {
         AlertDialog.Builder(this)
-            .setTitle("⚠️ Eliminar Contacto")
-            .setMessage("¿Estás seguro de eliminar a ${connection.connectedUserName}?\n\nYa no podrán ver su ubicación mutua.")
-            .setPositiveButton("Sí, eliminar") { _, _ ->
+            .setTitle("Eliminar Contacto")
+            .setMessage("¿Estás seguro de eliminar a '${connection.connectedUserName}' de tus contactos?")
+            .setPositiveButton("Eliminar") { dialog, _ ->
+                dialog.dismiss()
+
                 firestore.collection("connections")
                     .document(connection.connectionId)
                     .delete()
                     .addOnSuccessListener {
                         deleteReverseConnection(connection.connectedUserId)
-                        Toast.makeText(this, "✅ Contacto eliminado", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Contacto eliminado", Toast.LENGTH_SHORT).show()
                         loadContacts()
-                    }
-                    .addOnFailureListener { e ->
-                        Toast.makeText(this, "❌ Error: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
             }
             .setNegativeButton("Cancelar", null)
             .show()
+    }
+
+    private fun viewOnMap(connection: UserConnection) {
+        val intent = Intent(this, MapActivity::class.java).apply {
+            putExtra("USER_ID", userId)
+            putExtra("FOCUS_CONTACT_ID", connection.connectedUserId)
+            putExtra("FOCUS_CONTACT_NAME", connection.connectedUserName)
+        }
+        startActivity(intent)
     }
 
     private fun deleteReverseConnection(connectedUserId: String) {
@@ -629,8 +667,17 @@ class ContactsActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             }
     }
 
-    override fun onSupportNavigateUp(): Boolean {
-        onBackPressed()
-        return true
+    override fun onResume() {
+        super.onResume()
+        loadMyUserInfo()
+        loadContacts()
+    }
+
+    override fun onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START)
+        } else {
+            super.onBackPressed()
+        }
     }
 }

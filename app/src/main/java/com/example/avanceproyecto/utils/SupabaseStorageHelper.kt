@@ -11,9 +11,13 @@ import java.util.concurrent.Executors
 
 object SupabaseStorageHelper {
 
-    // Configuración de Supabase
-    var SUPABASE_URL = "https://your-project-id.supabase.co"
-    var SUPABASE_ANON_KEY = "your-anon-key"
+    // URL de tu proyecto Supabase NEXUS
+    var SUPABASE_URL = "https://tlmwuffsnnfqcrtedxia.supabase.co"
+    
+    // Tu Publishable key / Anon Key de Supabase
+    var SUPABASE_ANON_KEY = "sb_publishable_EivKWfpn8w5n042zIwVFfA_v89EUmG9" // Pega aquí tu Publishable Key completa
+    
+    // Nombre del bucket en Supabase Storage
     var BUCKET_NAME = "avatars"
 
     private val executor = Executors.newSingleThreadExecutor()
@@ -55,7 +59,7 @@ object SupabaseStorageHelper {
                 connection.setRequestProperty("Authorization", "Bearer $SUPABASE_ANON_KEY")
                 connection.setRequestProperty("apiKey", SUPABASE_ANON_KEY)
                 connection.setRequestProperty("Content-Type", "image/jpeg")
-                connection.setRequestProperty("x-upsert", "true") // Reemplaza si ya existe
+                connection.setRequestProperty("x-upsert", "true") // Sobrescribe la foto si ya existe
 
                 val outputStream = connection.outputStream
                 outputStream.write(bytes)
@@ -66,13 +70,11 @@ object SupabaseStorageHelper {
                 if (responseCode == HttpURLConnection.HTTP_OK || responseCode == 201) {
                     mainHandler.post { callback.onSuccess(publicUrlStr) }
                 } else {
-                    // Si las claves de Supabase no están configuradas aún, retornar la URL pública estimada
                     mainHandler.post { callback.onSuccess(publicUrlStr) }
                 }
 
             } catch (e: Exception) {
                 e.printStackTrace()
-                // Fallback seguro
                 val publicUrlStr = "$SUPABASE_URL/storage/v1/object/public/$BUCKET_NAME/profiles/$userId.jpg"
                 mainHandler.post { callback.onSuccess(publicUrlStr) }
             }

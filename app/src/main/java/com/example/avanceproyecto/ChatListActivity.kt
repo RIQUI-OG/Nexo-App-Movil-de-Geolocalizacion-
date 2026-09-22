@@ -18,6 +18,7 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.bumptech.glide.Glide
 import com.example.avanceproyecto.adapters.ConversationsAdapter
 import com.example.avanceproyecto.models.ChatConversation
 import com.example.avanceproyecto.models.UserConnection
@@ -34,16 +35,18 @@ class ChatListActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var rvConversations: RecyclerView
-    private lateinit var emptyStateChatList: View
+    private lateinit var emptyStateChatList: LinearLayout
     private lateinit var fabNewChat: FloatingActionButton
     private lateinit var swipeRefreshChatList: SwipeRefreshLayout
 
-    private val auth = FirebaseAuth.getInstance()
+    private lateinit var auth: FirebaseAuth
     private lateinit var realtimeDatabase: FirebaseDatabase
     private lateinit var firestore: FirebaseFirestore
 
     private var userId: String = ""
     private var userName: String = "Usuario"
+    private var myPhotoUrl: String = ""
+
     private val conversationsList = mutableListOf<ChatConversation>()
     private val userContactsList = mutableListOf<UserConnection>()
     private lateinit var adapter: ConversationsAdapter
@@ -52,6 +55,7 @@ class ChatListActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat_list)
 
+        auth = FirebaseAuth.getInstance()
         realtimeDatabase = FirebaseDatabase.getInstance()
         firestore = FirebaseFirestore.getInstance()
 
@@ -110,9 +114,8 @@ class ChatListActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             onConversationLongClick = { conversation ->
                 showDeleteConversationDialog(conversation)
             },
-            resolveContactName = { id ->
-                if (id == userId) "Tú"
-                else userContactsList.find { it.connectedUserId == id }?.connectedUserName ?: "Usuario"
+            resolveContactName = { contactId ->
+                resolveContactName(contactId)
             }
         )
 
@@ -133,7 +136,24 @@ class ChatListActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         if (userId.isNotEmpty()) {
             firestore.collection("users").document(userId).get()
                 .addOnSuccessListener { doc ->
-                    userName = doc.getString("name") ?: "Usuario"
+                    if (doc.exists()) {
+                        userName = doc.getString("name") ?: "Usuario"
+                        myPhotoUrl = doc.getString("photoUrl") ?: ""
+
+                        val navView: NavigationView = findViewById(R.id.nav_view_chat_list)
+                        val headerView = navView.getHeaderView(0)
+                        val tvProfileHeader = headerView?.findViewById<TextView>(R.id.tv_profile_header)
+                        tvProfileHeader?.text = userName
+
+                        val imgProfileHeader = headerView?.findViewById<ImageView>(R.id.img_profile_header)
+                        if (myPhotoUrl.isNotEmpty() && imgProfileHeader != null) {
+                            Glide.with(this)
+                                .load(myPhotoUrl)
+                                .placeholder(R.drawable.ic_person)
+                                .circleCrop()
+                                .into(imgProfileHeader)
+                        }
+                    }
                 }
         }
     }
@@ -172,12 +192,34 @@ class ChatListActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                         }
 
                         if (conversation != null) {
-                            // If it's a group, we check if userId is in participants OR if participants is empty (fallback).
-                            // If it's individual, we check if chatId contains userId.
                             val isMyGroup = conversation.isGroup && (conversation.participants?.contains(userId) == true || conversation.participants.isNullOrEmpty())
                             val isMyIndividualChat = !conversation.isGroup && conversation.chatId.contains(userId)
 
                             if (isMyGroup || isMyIndividualChat) {
+                                if (!conversation.isGroup) {
+                                    val otherUserId = conversation.participants?.find { it != userId }
+                                        ?: conversation.chatId.replace("chat_", "").replace("_", "").replace(userId, "")
+
+                                    if (otherUserId.isNotEmpty()) {
+                                        val localContact = userContactsList.find { it.connectedUserId == otherUserId }
+                                        if (localContact != null && localContact.connectedUserName.isNotEmpty()) {
+                                            conversation.title = localContact.connectedUserName
+                                            if (localContact.photoUrl.isNotEmpty()) {
+                                                conversation.photoUrl = localContact.photoUrl
+                                            }
+                                        }
+
+                                        firestore.collection("users").document(otherUserId).get()
+                                            .addOnSuccessListener { userDoc ->
+                                                val realName = userDoc.getString("name") ?: ""
+                                                val photo = userDoc.getString("photoUrl") ?: ""
+                                                if (realName.isNotEmpty()) conversation.title = realName
+                                                if (photo.isNotEmpty()) conversation.photoUrl = photo
+                                                adapter.notifyDataSetChanged()
+                                            }
+                                    }
+                                }
+
                                 conversationsList.add(conversation)
                             }
                         }
@@ -207,6 +249,25 @@ class ChatListActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                     }
                 }
             })
+    }
+
+    private fun resolveContactName(contactId: String): String {
+        val contact = userContactsList.find { it.connectedUserId == contactId }
+        return contact?.connectedUserName ?: "Usuario"
+    }
+
+    private fun showDeleteConversationDialog(conversation: ChatConversation) {
+        AlertDialog.Builder(this)
+            .setTitle("🗑️ Eliminar Chat")
+            .setMessage("¿Deseas eliminar la conversación con '${conversation.title}'? Esta acción eliminará el historial para ti.")
+            .setPositiveButton("Eliminar") { dialog, _ ->
+                dialog.dismiss()
+                realtimeDatabase.getReference("chat_conversations/${conversation.chatId}").removeValue()
+                realtimeDatabase.getReference("chat_messages/${conversation.chatId}").removeValue()
+                Toast.makeText(this, "Chat eliminado", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun showNewChatOrGroupOptions() {
@@ -287,19 +348,6 @@ class ChatListActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             .show()
     }
 
-    private fun showDeleteConversationDialog(conversation: ChatConversation) {
-        AlertDialog.Builder(this)
-            .setTitle("Borrar conversación")
-            .setMessage("¿Estás seguro de que deseas borrar esta conversación para siempre?")
-            .setPositiveButton("Borrar") { _, _ ->
-                realtimeDatabase.getReference("chat_conversations/${conversation.chatId}").removeValue()
-                realtimeDatabase.getReference("chat_messages/${conversation.chatId}").removeValue()
-                Toast.makeText(this, "Conversación borrada", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
-
     private fun openChatActivity(chatId: String, contactName: String, isGroup: Boolean, contactId: String = "") {
         val intent = Intent(this, ChatActivity::class.java).apply {
             putExtra("USER_ID", userId)
@@ -309,6 +357,13 @@ class ChatListActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             putExtra("IS_GROUP", isGroup)
         }
         startActivity(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadUserName()
+        loadContacts()
+        listenToConversations()
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {

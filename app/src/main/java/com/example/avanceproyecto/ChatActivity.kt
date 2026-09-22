@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -12,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.avanceproyecto.adapters.MessagesAdapter
 import com.example.avanceproyecto.models.ChatMessage
 import com.example.avanceproyecto.models.UserConnection
@@ -30,6 +32,8 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var btnBack: ImageButton
     private lateinit var tvChatUser: TextView
     private lateinit var tvChatStatus: TextView
+    private lateinit var imgHeaderProfile: ImageView
+    private lateinit var btnAddMember: ImageButton
 
     private lateinit var auth: FirebaseAuth
     private lateinit var realtimeDatabase: FirebaseDatabase
@@ -37,11 +41,11 @@ class ChatActivity : AppCompatActivity() {
 
     private var myUserId: String = ""
     private var myUserName: String = "Usuario"
+    private var myPhotoUrl: String = ""
     private var contactId: String = ""
     private var contactName: String = "Contacto"
     private var chatId: String = ""
     private var isGroup: Boolean = false
-    private lateinit var btnAddMember: ImageButton
 
     private val messagesList = mutableListOf<ChatMessage>()
     private lateinit var adapter: MessagesAdapter
@@ -63,6 +67,7 @@ class ChatActivity : AppCompatActivity() {
         initViews()
         setupChatId()
         loadMyUserName()
+        resolveHeaderContactInfo()
         loadGroupParticipants()
         setupRecyclerView()
 
@@ -82,6 +87,7 @@ class ChatActivity : AppCompatActivity() {
         btnBack = findViewById(R.id.btnBack)
         tvChatUser = findViewById(R.id.tvChatUser)
         tvChatStatus = findViewById(R.id.tvChatStatus)
+        imgHeaderProfile = findViewById(R.id.imgHeaderProfile)
         btnAddMember = findViewById(R.id.btnAddMember)
 
         tvChatUser.text = contactName
@@ -100,6 +106,37 @@ class ChatActivity : AppCompatActivity() {
 
         btnSend.setOnClickListener {
             sendMessage()
+        }
+    }
+
+    private fun resolveHeaderContactInfo() {
+        if (isGroup) return
+
+        val otherUserId = if (contactId.isNotEmpty()) contactId else {
+            chatId.replace("chat_", "").replace("_", "").replace(myUserId, "")
+        }
+
+        if (otherUserId.isNotEmpty() && otherUserId != myUserId) {
+            firestore.collection("users").document(otherUserId).get()
+                .addOnSuccessListener { userDoc ->
+                    if (userDoc.exists()) {
+                        val realName = userDoc.getString("name") ?: ""
+                        val photoUrl = userDoc.getString("photoUrl") ?: ""
+
+                        if (realName.isNotEmpty()) {
+                            contactName = realName
+                            tvChatUser.text = realName
+                        }
+
+                        if (photoUrl.isNotEmpty()) {
+                            Glide.with(this)
+                                .load(photoUrl)
+                                .placeholder(R.drawable.ic_person)
+                                .circleCrop()
+                                .into(imgHeaderProfile)
+                        }
+                    }
+                }
         }
     }
 
@@ -141,9 +178,9 @@ class ChatActivity : AppCompatActivity() {
                 realtimeDatabase.getReference("chat_conversations/$chatId/participants")
                     .get().addOnSuccessListener { snapshot ->
                         val currentParticipants = snapshot.children.mapNotNull { it.getValue(String::class.java) }
-                        
+
                         val availableContacts = contacts.filter { !currentParticipants.contains(it.connectedUserId) }
-                        
+
                         if (availableContacts.isEmpty()) {
                             Toast.makeText(this, "Todos tus contactos ya están en este grupo.", Toast.LENGTH_SHORT).show()
                             return@addOnSuccessListener
@@ -172,8 +209,7 @@ class ChatActivity : AppCompatActivity() {
             if (!currentList.contains(contact.connectedUserId)) {
                 currentList.add(contact.connectedUserId)
                 participantsRef.setValue(currentList)
-                
-                // Mensaje del sistema
+
                 val messageRef = realtimeDatabase.getReference("chat_messages/$chatId").push()
                 val chatMessage = ChatMessage(
                     messageId = messageRef.key ?: System.currentTimeMillis().toString(),
@@ -184,9 +220,9 @@ class ChatActivity : AppCompatActivity() {
                     timestamp = System.currentTimeMillis()
                 )
                 messageRef.setValue(chatMessage)
-                
+
                 realtimeDatabase.getReference("chat_conversations/$chatId/lastMessage").setValue("${contact.connectedUserName} se unió.")
-                
+
                 Toast.makeText(this, "${contact.connectedUserName} agregado al grupo.", Toast.LENGTH_SHORT).show()
             }
         }
@@ -195,7 +231,6 @@ class ChatActivity : AppCompatActivity() {
     private fun setupChatId() {
         if (chatId.isEmpty()) {
             if (contactId.isNotEmpty() && myUserId.isNotEmpty()) {
-                // Generar chatId determinístico 1 a 1
                 chatId = if (myUserId < contactId) "${myUserId}_${contactId}" else "${contactId}_${myUserId}"
             } else if (isGroup) {
                 chatId = "group_general"
@@ -210,6 +245,7 @@ class ChatActivity : AppCompatActivity() {
             firestore.collection("users").document(myUserId).get()
                 .addOnSuccessListener { doc ->
                     myUserName = doc.getString("name") ?: "Usuario"
+                    myPhotoUrl = doc.getString("photoUrl") ?: ""
                 }
         }
     }
@@ -303,6 +339,7 @@ class ChatActivity : AppCompatActivity() {
             chatId = chatId,
             senderId = myUserId,
             senderName = myUserName,
+            senderPhotoUrl = myPhotoUrl,
             text = text,
             timestamp = System.currentTimeMillis()
         )
@@ -311,13 +348,16 @@ class ChatActivity : AppCompatActivity() {
             .addOnSuccessListener {
                 etMessage.setText("")
 
-                val conversationData = mapOf<String, Any>(
+                val conversationData = mutableMapOf<String, Any>(
                     "chatId" to chatId,
                     "lastMessage" to text,
                     "lastMessageTime" to System.currentTimeMillis(),
-                    "title" to contactName,
                     "isGroup" to isGroup
                 )
+
+                if (isGroup) {
+                    conversationData["title"] = contactName
+                }
 
                 realtimeDatabase.getReference("chat_conversations/$chatId")
                     .updateChildren(conversationData)

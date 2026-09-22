@@ -10,9 +10,10 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
-    <!-- Notificaciones (Android 13+) -->
+    <!-- Notificaciones y Vibración -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <!-- Emergencia / Audio -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -49,23 +50,11 @@
             android:exported="false"
             android:foregroundServiceType="location" />
 
-        <!-- Administrador de Dispositivos (Prevención de Desinstalación / Modo Parental) -->
-        <receiver
-            android:name=".utils.AdminReceiver"
-            android:permission="android.permission.BIND_DEVICE_ADMIN"
-            android:exported="true">
-            <meta-data
-                android:name="android.app.device_admin"
-                android:resource="@xml/device_admin_policies" />
-            <intent-filter>
-                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
-            </intent-filter>
-        </receiver>
-
         <!-- LAUNCHER -->
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/Theme.Nexo.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -76,17 +65,20 @@
         <activity
             android:name=".LoginActivity"
             android:exported="false"
-            android:label="Iniciar sesión" />
+            android:label="Iniciar sesión"
+            android:theme="@style/Theme.Nexo.NoActionBar" />
 
         <activity
             android:name=".RegisterActivity"
             android:exported="false"
-            android:label="Crear cuenta" />
+            android:label="Crear cuenta"
+            android:theme="@style/Theme.Nexo.NoActionBar" />
 
         <!-- Home / Menú -->
         <activity
             android:name=".HomeActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.Nexo.NoActionBar" />
 
         <!-- 🗺Mapa -->
         <activity
@@ -141,7 +133,8 @@
 
         <activity
             android:name=".ChatActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.Nexo.NoActionBar" />
 
     </application>
 
