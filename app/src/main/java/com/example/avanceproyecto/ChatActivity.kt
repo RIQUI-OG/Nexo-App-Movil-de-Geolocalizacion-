@@ -48,6 +48,7 @@ class ChatActivity : AppCompatActivity() {
     private var isGroup: Boolean = false
 
     private val messagesList = mutableListOf<ChatMessage>()
+    private val senderPhotosCache = mutableMapOf<String, String>()
     private lateinit var adapter: MessagesAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -129,6 +130,7 @@ class ChatActivity : AppCompatActivity() {
                         }
 
                         if (photoUrl.isNotEmpty()) {
+                            senderPhotosCache[otherUserId] = photoUrl
                             Glide.with(this)
                                 .load(photoUrl)
                                 .placeholder(R.drawable.ic_person)
@@ -246,6 +248,9 @@ class ChatActivity : AppCompatActivity() {
                 .addOnSuccessListener { doc ->
                     myUserName = doc.getString("name") ?: "Usuario"
                     myPhotoUrl = doc.getString("photoUrl") ?: ""
+                    if (myPhotoUrl.isNotEmpty()) {
+                        senderPhotosCache[myUserId] = myPhotoUrl
+                    }
                 }
         }
     }
@@ -282,7 +287,14 @@ class ChatActivity : AppCompatActivity() {
             stackFromEnd = true
         }
 
-        adapter = MessagesAdapter(messagesList, myUserId)
+        adapter = MessagesAdapter(
+            messageList = messagesList,
+            currentUserId = myUserId,
+            resolveSenderPhoto = { senderId ->
+                senderPhotosCache[senderId] ?: ""
+            }
+        )
+
         rvMessages.adapter = adapter
     }
 
@@ -310,6 +322,22 @@ class ChatActivity : AppCompatActivity() {
 
                     if (messagesList.isNotEmpty()) {
                         rvMessages.smoothScrollToPosition(messagesList.size - 1)
+                    }
+
+                    // Consultar en segundo plano las fotos de los emisores que no estén en caché
+                    val unknownSenderIds = messagesList.map { it.senderId }.distinct().filter {
+                        it.isNotEmpty() && it != myUserId && !senderPhotosCache.containsKey(it)
+                    }
+
+                    for (sId in unknownSenderIds) {
+                        firestore.collection("users").document(sId).get()
+                            .addOnSuccessListener { userDoc ->
+                                val photo = userDoc.getString("photoUrl") ?: ""
+                                if (photo.isNotEmpty()) {
+                                    senderPhotosCache[sId] = photo
+                                    adapter.notifyDataSetChanged()
+                                }
+                            }
                     }
                 }
 

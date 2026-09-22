@@ -19,7 +19,8 @@ import java.util.Locale
 
 class MessagesAdapter(
     private val messageList: List<ChatMessage>,
-    private val currentUserId: String
+    private val currentUserId: String,
+    private val resolveSenderPhoto: (String) -> String = { "" }
 ) : RecyclerView.Adapter<MessagesAdapter.MessageViewHolder>() {
 
     private val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
@@ -77,9 +78,15 @@ class MessagesAdapter(
             holder.rootLayout.gravity = Gravity.START or Gravity.BOTTOM
             holder.cvSenderAvatar.visibility = View.VISIBLE
 
-            if (message.senderPhotoUrl.isNotEmpty()) {
+            val photoToLoad = if (message.senderPhotoUrl.isNotEmpty()) {
+                message.senderPhotoUrl
+            } else {
+                resolveSenderPhoto(message.senderId)
+            }
+
+            if (photoToLoad.isNotEmpty()) {
                 Glide.with(holder.itemView.context)
-                    .load(message.senderPhotoUrl)
+                    .load(photoToLoad)
                     .placeholder(R.drawable.ic_person)
                     .error(R.drawable.ic_person)
                     .circleCrop()
