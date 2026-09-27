@@ -35,7 +35,8 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyBghcG6pr49IRRgmVD7WST2mEyhxLIuMuU" />
-
+        <!-- 🗺Google Maps API KEY -->
+        
         <!-- Requerido por Google Play Services -->
         <meta-data
             android:name="com.google.android.gms.version"
